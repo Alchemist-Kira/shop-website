@@ -105,14 +105,6 @@ if (result.count === 0) {
   console.log("Database seeded with initial products.");
 }
 
-const bannerStmt = db.prepare("SELECT count(*) as count FROM banners");
-const bannerResult = bannerStmt.get();
 
-if (bannerResult.count === 0) {
-  const insertBanner = db.prepare('INSERT INTO banners (imageUrl, title, subtitle) VALUES (?, ?, ?)');
-  insertBanner.run('https://images.unsplash.com/photo-1539008835657-9e8e9680c956?q=80&w=2070&auto=format&fit=crop', 'The Aesthetic Edition', 'Discover our latest premium collection of sophisticated designs.');
-  insertBanner.run('https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop', 'Summer Breeze', 'Lightweight, elegant wear for the warmer seasons.');
-  console.log("Database seeded with initial banners.");
-}
 
 export default db;
