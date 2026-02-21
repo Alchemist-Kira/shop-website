@@ -7,6 +7,7 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState('all');
     const [sortBy, setSortBy] = useState('newest');
+    const [searchQuery, setSearchQuery] = useState('');
 
     const handleUpdateStatus = async (orderId, newStatus) => {
         try {
@@ -31,18 +32,35 @@ export default function AdminDashboard() {
         }
     };
 
+
+
     const filteredAndSortedOrders = useMemo(() => {
         let result = [...orders];
+
+        // Search Filter
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            result = result.filter(o =>
+                o.id.toString().includes(query) ||
+                (o.customerName && o.customerName.toLowerCase().includes(query)) ||
+                (o.customerPhone && o.customerPhone.includes(query)) ||
+                (o.customerEmail && o.customerEmail.toLowerCase().includes(query))
+            );
+        }
+
+        // Status Filter
         if (filterStatus !== 'all') {
             result = result.filter(o => o.status === filterStatus);
         }
+
+        // Sort
         if (sortBy === 'newest') {
             result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         } else if (sortBy === 'oldest') {
             result.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
         }
         return result;
-    }, [orders, filterStatus, sortBy]);
+    }, [orders, filterStatus, sortBy, searchQuery]);
 
     const handleDeleteOrder = async (orderId) => {
         if (!window.confirm("Are you sure you want to delete this order? This cannot be undone.")) return;
@@ -258,7 +276,14 @@ export default function AdminDashboard() {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-xl)', flexWrap: 'wrap', gap: '1rem' }}>
                 <h1 style={{ fontSize: '2rem', fontWeight: 600 }}>Order Management</h1>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <input
+                        type="text"
+                        placeholder="Search orders (ID, Name, Phone)..."
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', outline: 'none', width: '250px' }}
+                    />
                     <select
                         value={filterStatus}
                         onChange={e => setFilterStatus(e.target.value)}
@@ -334,12 +359,14 @@ export default function AdminDashboard() {
                                             {order.status}
                                         </span>
                                     </div>
-                                    {order.status === 'pending' && (
-                                        <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                                    <div style={{ display: 'flex', gap: '8px', marginTop: '8px', justifyContent: 'flex-end' }}>
+                                        {order.status !== 'confirmed' && (
                                             <button onClick={() => handleUpdateStatus(order.id, 'confirmed')} style={{ padding: '6px 12px', border: '1px solid #198754', backgroundColor: '#198754', color: 'white', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600 }}>Confirm</button>
+                                        )}
+                                        {order.status !== 'cancelled' && (
                                             <button onClick={() => handleUpdateStatus(order.id, 'cancelled')} style={{ padding: '6px 12px', border: '1px solid #dc3545', backgroundColor: 'transparent', color: '#dc3545', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
                                     {order.status === 'confirmed' && (
                                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', marginTop: '4px' }}>
                                             <button onClick={() => handlePrint(order)} style={{ padding: '8px 16px', border: 'none', backgroundColor: 'var(--color-text-primary)', color: 'white', borderRadius: 'var(--radius-sm)', fontSize: '0.875rem', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', boxShadow: 'var(--shadow-sm)', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
@@ -401,6 +428,12 @@ export default function AdminDashboard() {
                                             </li>
                                         ))}
                                     </ul>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'var(--space-md)', padding: 'var(--space-sm) 0', borderTop: '1px solid var(--color-border)' }}>
+                                        <span style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>Delivery Charge</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span style={{ fontWeight: 600 }}>{(order.totalAmount - order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <strong>৳</strong></span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 

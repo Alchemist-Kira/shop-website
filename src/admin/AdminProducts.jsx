@@ -14,6 +14,9 @@ export default function AdminProducts() {
     });
     const [imageFiles, setImageFiles] = useState([]);
     const [existingImages, setExistingImages] = useState([]);
+    const [settings, setSettings] = useState({ delivery_inside: '60', delivery_outside: '120' });
+    const [savingSettings, setSavingSettings] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Derived state for dynamic category suggestions
     const existingCategories = useMemo(() => {
@@ -40,8 +43,20 @@ export default function AdminProducts() {
             });
     };
 
+    const fetchSettings = () => {
+        fetch('/api/settings')
+            .then(res => res.json())
+            .then(data => {
+                if (data.delivery_inside || data.delivery_outside) {
+                    setSettings(prev => ({ ...prev, ...data }));
+                }
+            })
+            .catch(err => console.error("Failed to fetch settings:", err));
+    };
+
     useEffect(() => {
         fetchProducts();
+        fetchSettings();
     }, []);
 
     const openAddModal = () => {
@@ -159,17 +174,90 @@ export default function AdminProducts() {
         setExistingImages(prev => prev.filter((_, i) => i !== index));
     };
 
+    const handleSaveSettings = async () => {
+        setSavingSettings(true);
+        try {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch('/api/settings', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(settings)
+            });
+            if (res.ok) {
+                addToast('Store settings updated!', 'success');
+            } else {
+                addToast('Failed to update settings', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            addToast('Error saving settings', 'error');
+        } finally {
+            setSavingSettings(false);
+        }
+    };
+
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-xl)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-xl)', flexWrap: 'wrap', gap: '1rem' }}>
                 <h1 style={{ fontSize: '2rem', fontWeight: 600 }}>Inventory Management</h1>
-                <button
-                    className="btn btn-primary"
-                    onClick={openAddModal}
-                    style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
-                >
-                    + Add Product
-                </button>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <input
+                        type="text"
+                        placeholder="Search products..."
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', outline: 'none', width: '200px' }}
+                    />
+                    <button
+                        className="btn btn-primary"
+                        onClick={openAddModal}
+                        style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
+                    >
+                        + Add Product
+                    </button>
+                </div>
+            </div>
+
+            {/* Global Store Settings */}
+            <div style={{ backgroundColor: 'white', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', padding: 'var(--space-lg)', marginBottom: 'var(--space-xl)' }}>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: 'var(--space-md)', borderBottom: '1px solid var(--color-border)', paddingBottom: 'var(--space-sm)' }}>Store Settings</h2>
+                <div style={{ display: 'flex', gap: 'var(--space-xl)', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                    <div>
+                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>Delivery Charge (Inside Dhaka)</label>
+                        <div style={{ position: 'relative' }}>
+                            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontWeight: 600 }}>৳</span>
+                            <input
+                                type="number"
+                                value={settings.delivery_inside}
+                                onChange={e => setSettings(prev => ({ ...prev, delivery_inside: e.target.value }))}
+                                style={{ padding: '10px 10px 10px 32px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', width: '150px' }}
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>Delivery Charge (Outside Dhaka)</label>
+                        <div style={{ position: 'relative' }}>
+                            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontWeight: 600 }}>৳</span>
+                            <input
+                                type="number"
+                                value={settings.delivery_outside}
+                                onChange={e => setSettings(prev => ({ ...prev, delivery_outside: e.target.value }))}
+                                style={{ padding: '10px 10px 10px 32px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', width: '150px' }}
+                            />
+                        </div>
+                    </div>
+                    <button
+                        className="btn btn-secondary"
+                        onClick={handleSaveSettings}
+                        disabled={savingSettings}
+                        style={{ padding: '10px 24px' }}
+                    >
+                        {savingSettings ? 'Saving...' : 'Save Settings'}
+                    </button>
+                </div>
             </div>
 
             {loading ? (
@@ -187,7 +275,12 @@ export default function AdminProducts() {
                             </tr>
                         </thead>
                         <tbody>
-                            {products.map(product => {
+                            {products.filter(p =>
+                                !searchQuery.trim() ||
+                                p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                (p.category && p.category.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                                (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
+                            ).map(product => {
                                 const sizesText = typeof product.sizes === 'string' ? JSON.parse(product.sizes).join(', ') : '';
                                 const colorsText = typeof product.colors === 'string' ? JSON.parse(product.colors).join(', ') : '';
 

@@ -15,15 +15,29 @@ export default function OrderPage() {
     });
     const [placingOrder, setPlacingOrder] = useState(false);
     const [orderSuccess, setOrderSuccess] = useState(false);
+    const [settings, setSettings] = useState({ delivery_inside: '60', delivery_outside: '120' });
 
     useEffect(() => {
         // Load cart from localStorage
         const savedCart = JSON.parse(localStorage.getItem('shop_cart') || '[]');
         setCart(savedCart);
+
+        // Fetch current store settings for delivery charges
+        fetch('/api/settings')
+            .then(res => res.json())
+            .then(data => {
+                if (data.delivery_inside || data.delivery_outside) {
+                    setSettings({
+                        delivery_inside: data.delivery_inside || '60',
+                        delivery_outside: data.delivery_outside || '120'
+                    });
+                }
+            })
+            .catch(err => console.error("Failed to fetch settings:", err));
     }, []);
 
     const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const shippingCost = formData.shippingArea === 'Inside Dhaka' ? 60 : (formData.shippingArea === 'Outside Dhaka' ? 120 : 0);
+    const shippingCost = formData.shippingArea === 'Inside Dhaka' ? parseFloat(settings.delivery_inside) : (formData.shippingArea === 'Outside Dhaka' ? parseFloat(settings.delivery_outside) : 0);
     const totalAmount = subtotal + shippingCost;
 
     const handleRemove = (productId, selectedSize, selectedColor) => {

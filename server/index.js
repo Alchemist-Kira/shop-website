@@ -318,6 +318,20 @@ app.put('/api/orders/:id/status', authenticateToken, (req, res) => {
     }
 });
 
+// Update order total amount (Admin) - used for changing delivery charges
+app.put('/api/orders/:id/total', authenticateToken, (req, res) => {
+    const { id } = req.params;
+    const { totalAmount } = req.body;
+    try {
+        const stmt = db.prepare('UPDATE orders SET totalAmount = ? WHERE id = ?');
+        stmt.run(totalAmount, id);
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to update order total' });
+    }
+});
+
 // Delete a specific order (Admin)
 app.delete('/api/orders/:id', authenticateToken, (req, res) => {
     const { id } = req.params;
@@ -421,6 +435,41 @@ app.delete('/api/banners/:id', authenticateToken, (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Failed to delete banner' });
+    }
+});
+
+// --- SETTINGS API ---
+
+// Get all settings (Public)
+app.get('/api/settings', (req, res) => {
+    try {
+        const rows = db.prepare('SELECT key, value FROM settings').all();
+        const settings = {};
+        rows.forEach(r => { settings[r.key] = r.value; });
+        res.json(settings);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch settings' });
+    }
+});
+
+// Update a setting (Admin)
+app.put('/api/settings', authenticateToken, (req, res) => {
+    const settingsToUpdate = req.body;
+    try {
+        const updateStmt = db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)');
+
+        const updateAll = db.transaction((settings) => {
+            for (const [key, value] of Object.entries(settings)) {
+                updateStmt.run(key, value.toString());
+            }
+        });
+
+        updateAll(settingsToUpdate);
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to update settings' });
     }
 });
 

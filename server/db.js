@@ -41,6 +41,11 @@ db.exec(`
     title TEXT,
     subtitle TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
 `);
 
 // Safe migrations for existing database
@@ -69,7 +74,15 @@ try { db.exec(`ALTER TABLE orders ADD COLUMN orderNote TEXT`); } catch (e) { }
 try { db.exec(`ALTER TABLE order_items ADD COLUMN selectedSize TEXT`); } catch (e) { }
 try { db.exec(`ALTER TABLE order_items ADD COLUMN selectedColor TEXT`); } catch (e) { }
 
-// Seed some initial breathtaking dresses if products table is empty
+// Seed default settings if they don't exist
+try {
+  const checkSetting = db.prepare('SELECT value FROM settings WHERE key = ?');
+  const insertSetting = db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)');
 
+  if (!checkSetting.get('delivery_inside')) insertSetting.run('delivery_inside', '60');
+  if (!checkSetting.get('delivery_outside')) insertSetting.run('delivery_outside', '120');
+} catch (e) {
+  console.error("Failed to seed default settings:", e);
+}
 
 export default db;
