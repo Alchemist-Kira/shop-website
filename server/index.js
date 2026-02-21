@@ -424,6 +424,19 @@ app.delete('/api/banners/:id', authenticateToken, (req, res) => {
     }
 });
 
+// --- DEPLOYMENT CONFIGURATION ---
+// Serve the built Vite frontend statically
+const distPath = path.join(__dirname, '../dist');
+if (fs.existsSync(distPath)) {
+    app.use(express.static(distPath));
+
+    // Catch-all route to serve React's index.html for unknown routes (React Router support)
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(distPath, 'index.html'));
+    });
+}
+
+// Start Server
 app.listen(port, () => {
     console.log(`API Server running at http://localhost:${port}`);
 });
