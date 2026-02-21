@@ -150,7 +150,7 @@ export default function LandingPage() {
                             }, {})
                         ).map(([category, categoryProducts]) => (
                             <div key={category}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: 'var(--space-lg)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: 'var(--space-lg)', padding: '0 var(--space-md)' }}>
                                     <h3 style={{
                                         fontSize: '1.75rem',
                                         margin: 0,
