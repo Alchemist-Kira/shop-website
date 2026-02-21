@@ -431,7 +431,7 @@ if (fs.existsSync(distPath)) {
     app.use(express.static(distPath));
 
     // Catch-all route to serve React's index.html for unknown routes (React Router support)
-    app.get('*', (req, res) => {
+    app.get(/.*/, (req, res) => {
         res.sendFile(path.join(distPath, 'index.html'));
     });
 }
