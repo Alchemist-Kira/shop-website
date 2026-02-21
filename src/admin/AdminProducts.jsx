@@ -210,7 +210,7 @@ export default function AdminProducts() {
                                             </div>
                                         </td>
                                         <td style={{ padding: '1rem' }}>
-                                            <span>৳{product.price.toFixed(2)}</span>
+                                            <span>{product.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <strong>৳</strong></span>
                                         </td>
                                         <td style={{ padding: '1rem' }}>
                                             <span style={{ fontWeight: 600, color: product.stock === 0 ? '#d9381e' : (product.stock <= 5 ? '#e67300' : 'inherit') }}>{product.stock}</span>
@@ -268,7 +268,7 @@ export default function AdminProducts() {
 
                                 <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
                                     <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                                        <label style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>PRICE (৳)</label>
+                                        <label style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>PRICE (<strong>৳</strong>)</label>
                                         <input type="number" step="0.01" value={formData.price} onChange={e => setFormData({ ...formData, price: parseFloat(e.target.value) })} style={{ padding: '12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '1rem' }} />
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>

@@ -152,8 +152,8 @@ export default function AdminDashboard() {
                     ${(item.selectedSize || item.selectedColor) ? `<div style="font-size: 12px; color: #666;">${item.selectedSize ? 'Size: ' + item.selectedSize : ''} ${item.selectedColor ? '| Color: ' + item.selectedColor : ''}</div>` : ''}
                 </td>
                 <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
-                <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right;">৳${Number(item.price).toFixed(2)}</td>
-                <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right; font-weight: 600;">৳${(item.quantity * item.price).toFixed(2)}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right;">${Number(item.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <strong>৳</strong></td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right; font-weight: 600;">${(item.quantity * item.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <strong>৳</strong></td>
             </tr>
         `).join('');
 
@@ -222,17 +222,17 @@ export default function AdminDashboard() {
                 <div class="totals">
                     <div class="totals-row">
                         <span>Subtotal</span>
-                        <span>৳${subtotal.toFixed(2)}</span>
+                        <span>${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <strong>৳</strong></span>
                     </div>
                     ${shippingCost > 0 ? (
                 '<div class="totals-row">' +
                 '<span>Shipping (' + order.shippingArea + ')</span>' +
-                '<span>৳' + shippingCost.toFixed(2) + '</span>' +
+                '<span>' + shippingCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' <strong>৳</strong></span>' +
                 '</div>'
             ) : ''}
                     <div class="totals-row bold">
                         <span>Total Paid</span>
-                        <span>৳${order.totalAmount.toFixed(2)}</span>
+                        <span>${order.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <strong>৳</strong></span>
                     </div>
                 </div>
 
@@ -319,7 +319,7 @@ export default function AdminDashboard() {
                                     </div>
                                 </div>
                                 <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-                                    <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-accent)' }}>৳{order.totalAmount.toFixed(2)}</div>
+                                    <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-accent)' }}>{order.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <strong>৳</strong></div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <span style={{
                                             display: 'inline-block',
@@ -395,9 +395,9 @@ export default function AdminDashboard() {
                                                         </div>
                                                     )}
 
-                                                    <div style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>Qty: {item.quantity} × ৳{Number(item.price).toFixed(2)}</div>
+                                                    <div style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>Qty: {item.quantity} × {Number(item.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <strong>৳</strong></div>
                                                 </div>
-                                                <div style={{ fontWeight: 600 }}>৳{(item.price * item.quantity).toFixed(2)}</div>
+                                                <div style={{ fontWeight: 600 }}>{(item.price * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <strong>৳</strong></div>
                                             </li>
                                         ))}
                                     </ul>

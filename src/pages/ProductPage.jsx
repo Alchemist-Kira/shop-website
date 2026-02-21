@@ -13,6 +13,8 @@ export default function ProductPage() {
     const [error, setError] = useState('');
     const [activeImage, setActiveImage] = useState('');
     const [imagesList, setImagesList] = useState([]);
+    const [quantity, setQuantity] = useState(1);
+    const [zoomProps, setZoomProps] = useState({ show: false, x: 0, y: 0 });
 
     useEffect(() => {
         // Extract just the ID from the slug (e.g., '1-midnight-silk' -> '1')
@@ -65,7 +67,7 @@ export default function ProductPage() {
         const newItem = {
             ...product,
             productId: product.id,
-            quantity: 1,
+            quantity: quantity,
             selectedSize,
             selectedColor
         };
@@ -78,7 +80,7 @@ export default function ProductPage() {
         );
 
         if (existingItemIndex >= 0) {
-            cart[existingItemIndex].quantity += 1;
+            cart[existingItemIndex].quantity += quantity;
         } else {
             cart.push(newItem);
         }
@@ -117,6 +119,27 @@ export default function ProductPage() {
         );
     }
 
+    const handleMouseMove = (e) => {
+        const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+        const x = ((e.clientX - left) / width) * 100;
+        const y = ((e.clientY - top) / height) * 100;
+        setZoomProps({ show: true, x, y });
+    };
+
+    const currentIndex = imagesList.indexOf(activeImage);
+    const handlePrevImage = (e) => {
+        e.stopPropagation();
+        if (imagesList.length <= 1) return;
+        if (currentIndex > 0) setActiveImage(imagesList[currentIndex - 1]);
+        else setActiveImage(imagesList[imagesList.length - 1]);
+    };
+    const handleNextImage = (e) => {
+        e.stopPropagation();
+        if (imagesList.length <= 1) return;
+        if (currentIndex < imagesList.length - 1) setActiveImage(imagesList[currentIndex + 1]);
+        else setActiveImage(imagesList[0]);
+    };
+
     return (
         <div className="container" style={{ paddingTop: '4rem', paddingBottom: '8rem', maxWidth: '1200px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4rem', alignItems: 'start' }}>
@@ -124,7 +147,11 @@ export default function ProductPage() {
                 {/* Left Side: Image Gallery */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     {/* Main Active Image with proper aspect ratio container to prevent overlap/overflow */}
-                    <div style={{ width: '100%', aspectRatio: '3/4', backgroundColor: 'var(--color-surface-dim)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+                    <div
+                        style={{ position: 'relative', width: '100%', aspectRatio: '3/4', backgroundColor: '#f5f5f5', borderRadius: 'var(--radius-md)', overflow: 'hidden', cursor: 'crosshair' }}
+                        onMouseMove={handleMouseMove}
+                        onMouseLeave={() => setZoomProps({ show: false, x: 0, y: 0 })}
+                    >
                         <img
                             src={activeImage}
                             alt={product.name}
@@ -132,9 +159,39 @@ export default function ProductPage() {
                                 width: '100%',
                                 height: '100%',
                                 objectFit: 'contain', // contain instead of cover to prevent massive zooming and clipping
-                                backgroundColor: '#f5f5f5'
+                                transform: zoomProps.show ? 'scale(2.5)' : 'scale(1)',
+                                transformOrigin: `${zoomProps.x}% ${zoomProps.y}%`,
+                                transition: zoomProps.show ? 'none' : 'transform 0.3s ease'
                             }}
                         />
+
+                        {/* Image Navigation Arrows */}
+                        {imagesList.length > 1 && (
+                            <>
+                                <button
+                                    onClick={handlePrevImage}
+                                    style={{
+                                        position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)',
+                                        width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.8)',
+                                        border: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer', zIndex: 10,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', color: '#333'
+                                    }}
+                                >
+                                    &#8592;
+                                </button>
+                                <button
+                                    onClick={handleNextImage}
+                                    style={{
+                                        position: 'absolute', top: '50%', right: '1rem', transform: 'translateY(-50%)',
+                                        width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.8)',
+                                        border: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer', zIndex: 10,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', color: '#333'
+                                    }}
+                                >
+                                    &#8594;
+                                </button>
+                            </>
+                        )}
                     </div>
 
                     {/* Thumbnails Cycler */}
@@ -167,8 +224,8 @@ export default function ProductPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xl)' }}>
                     <div>
                         <h1 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: 'var(--space-xs)', lineHeight: 1.1 }}>{product.name}</h1>
-                        <div style={{ fontSize: '1.5rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
-                            ৳{Number(product.price).toFixed(2)}
+                        <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--color-accent)' }}>
+                            {Number(product.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <strong>৳</strong>
                         </div>
                     </div>
 
@@ -229,6 +286,26 @@ export default function ProductPage() {
                                 </div>
                             </div>
                         )}
+
+                        <div style={{ marginTop: 'var(--space-md)' }}>
+                            <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 'var(--space-sm)', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Quantity</h3>
+                            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', width: 'fit-content' }}>
+                                <button
+                                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                                    style={{ padding: '0.5rem 1rem', background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', outline: 'none' }}
+                                >
+                                    &minus;
+                                </button>
+                                <span style={{ padding: '0 1rem', fontWeight: 600, minWidth: '40px', textAlign: 'center' }}>{quantity}</span>
+                                <button
+                                    onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                                    style={{ padding: '0.5rem 1rem', background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', outline: 'none' }}
+                                    disabled={quantity >= product.stock}
+                                >
+                                    &#43;
+                                </button>
+                            </div>
+                        </div>
 
                         <div style={{ marginTop: 'var(--space-lg)' }}>
                             <div style={{ display: 'flex', gap: '1rem' }}>

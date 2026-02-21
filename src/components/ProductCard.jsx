@@ -85,7 +85,7 @@ export default function ProductCard({ product }) {
                     }}>
                         {product.name}
                     </h3>
-                    <span style={{ fontWeight: 600, color: 'var(--color-accent)', whiteSpace: 'nowrap' }}>৳{product.price.toFixed(2)}</span>
+                    <span style={{ fontWeight: 600, color: 'var(--color-accent)', whiteSpace: 'nowrap' }}>{product.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <strong>৳</strong></span>
                 </div>
                 <button
                     style={{

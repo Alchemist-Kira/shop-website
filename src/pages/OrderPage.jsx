@@ -147,26 +147,26 @@ export default function OrderPage() {
                                                 </button>
                                             </div>
                                         </div>
-                                        <div style={{ fontWeight: 600 }}>৳{(item.price * item.quantity).toFixed(2)}</div>
+                                        <div style={{ fontWeight: 600 }}>{(item.price * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <strong>৳</strong></div>
                                     </div>
                                 )
                             })}
                         </div>
 
                         <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 'var(--space-md)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-secondary)' }}>
-                                <span>Subtotal</span>
-                                <span>৳{subtotal.toFixed(2)}</span>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 'var(--space-md)', borderBottom: '1px solid var(--color-border)' }}>
+                                <span style={{ color: 'var(--color-text-secondary)' }}>Subtotal</span>
+                                <span>{subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <strong>৳</strong></span>
                             </div>
                             {shippingCost > 0 && (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-secondary)' }}>
-                                    <span>Shipping ({formData.shippingArea})</span>
-                                    <span>৳{shippingCost.toFixed(2)}</span>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 'var(--space-md)', borderBottom: '1px solid var(--color-border)' }}>
+                                    <span style={{ color: 'var(--color-text-secondary)' }}>Shipping ({formData.shippingArea})</span>
+                                    <span>{shippingCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <strong>৳</strong></span>
                                 </div>
                             )}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 700, marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed var(--color-border)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, fontSize: '1.125rem' }}>
                                 <span>Total</span>
-                                <span>৳{totalAmount.toFixed(2)}</span>
+                                <span>{totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <strong>৳</strong></span>
                             </div>
                         </div>
                     </div>
@@ -283,10 +283,10 @@ export default function OrderPage() {
                             <button
                                 type="submit"
                                 className="btn btn-primary"
-                                disabled={placingOrder}
+                                disabled={cart.length === 0 || placingOrder}
                                 style={{ marginTop: 'var(--space-sm)', width: '100%' }}
                             >
-                                {placingOrder ? 'Processing...' : `Place Order • ৳${totalAmount.toFixed(2)}`}
+                                {placingOrder ? 'Processing...' : <span>Place Order &bull; {totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <strong>৳</strong></span>}
                             </button>
                         </form>
                     </div>

@@ -70,41 +70,6 @@ try { db.exec(`ALTER TABLE order_items ADD COLUMN selectedSize TEXT`); } catch (
 try { db.exec(`ALTER TABLE order_items ADD COLUMN selectedColor TEXT`); } catch (e) { }
 
 // Seed some initial breathtaking dresses if products table is empty
-const stmt = db.prepare("SELECT count(*) as count FROM products");
-const result = stmt.get();
-
-if (result.count === 0) {
-  const insert = db.prepare('INSERT INTO products (name, description, price, imageUrl, stock) VALUES (?, ?, ?, ?, ?)');
-  const insertMany = db.transaction((products) => {
-    for (const prod of products) insert.run(prod.name, prod.description, prod.price, prod.imageUrl, prod.stock);
-  });
-
-  insertMany([
-    {
-      name: 'Midnight Silk Gown',
-      description: 'An elegant sweeping midnight blue silk gown, perfect for galas.',
-      price: 299.99,
-      imageUrl: 'https://images.unsplash.com/photo-1566160983195-6fcfe7e22119?q=80&w=600&auto=format&fit=crop',
-      stock: 12
-    },
-    {
-      name: 'Champagne Lace Cocktail',
-      description: 'Intricate champagne lace over a blush slip. A modern classic.',
-      price: 189.50,
-      imageUrl: 'https://images.unsplash.com/photo-1595777457583-95e059f581ce?q=80&w=600&auto=format&fit=crop',
-      stock: 8
-    },
-    {
-      name: 'Emerald Velvet Wrap',
-      description: 'Luxurious emerald velvet with a flattering wrap silhouette.',
-      price: 245.00,
-      imageUrl: 'https://images.unsplash.com/photo-1572804013309-8c98e252119d?q=80&w=600&auto=format&fit=crop',
-      stock: 5
-    }
-  ]);
-  console.log("Database seeded with initial products.");
-}
-
 
 
 export default db;
