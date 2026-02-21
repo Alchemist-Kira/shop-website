@@ -18,7 +18,7 @@ export default function ProductPage() {
         // Extract just the ID from the slug (e.g., '1-midnight-silk' -> '1')
         const numericId = id.split('-')[0];
 
-        fetch(`http://localhost:3001/api/products/${numericId}`)
+        fetch(`/api/products/${numericId}`)
             .then(res => {
                 if (!res.ok) throw new Error('Product not found');
                 return res.json();

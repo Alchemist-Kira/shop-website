@@ -23,7 +23,7 @@ export default function AdminProducts() {
 
     const fetchProducts = () => {
         const token = localStorage.getItem('admin_token');
-        fetch('http://localhost:3001/api/products', {
+        fetch('/api/products', {
             headers: { 'Authorization': `Bearer ${token}` }
         })
             .then(res => {
@@ -97,7 +97,7 @@ export default function AdminProducts() {
             });
 
             if (modalMode === 'add') {
-                const response = await fetch('http://localhost:3001/api/products', {
+                const response = await fetch('/api/products', {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` },
                     body: submitData
@@ -113,7 +113,7 @@ export default function AdminProducts() {
             } else if (modalMode === 'edit') {
                 submitData.append('existingImages', JSON.stringify(existingImages));
 
-                const response = await fetch(`http://localhost:3001/api/products/${editingId}`, {
+                const response = await fetch(`/api/products/${editingId}`, {
                     method: 'PUT',
                     headers: { 'Authorization': `Bearer ${token}` },
                     body: submitData
@@ -137,7 +137,7 @@ export default function AdminProducts() {
         if (!window.confirm('Are you sure you want to delete this product? Action cannot be undone.')) return;
         try {
             const token = localStorage.getItem('admin_token');
-            const response = await fetch(`http://localhost:3001/api/products/${id}`, {
+            const response = await fetch(`/api/products/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`

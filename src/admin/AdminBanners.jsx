@@ -17,7 +17,7 @@ export default function AdminBanners() {
 
     const fetchBanners = () => {
         setLoading(true);
-        fetch('http://localhost:3001/api/banners')
+        fetch('/api/banners')
             .then(res => res.json())
             .then(data => {
                 setBanners(data);
@@ -51,7 +51,7 @@ export default function AdminBanners() {
 
         const token = localStorage.getItem('admin_token');
         try {
-            const response = await fetch('http://localhost:3001/api/banners', {
+            const response = await fetch('/api/banners', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: submitData
@@ -81,7 +81,7 @@ export default function AdminBanners() {
 
         const token = localStorage.getItem('admin_token');
         try {
-            const response = await fetch(`http://localhost:3001/api/banners/${id}`, {
+            const response = await fetch(`/api/banners/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });

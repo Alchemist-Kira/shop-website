@@ -11,7 +11,7 @@ export default function AdminDashboard() {
     const handleUpdateStatus = async (orderId, newStatus) => {
         try {
             const token = localStorage.getItem('admin_token');
-            const res = await fetch(`http://localhost:3001/api/orders/${orderId}/status`, {
+            const res = await fetch(`/api/orders/${orderId}/status`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -49,7 +49,7 @@ export default function AdminDashboard() {
 
         try {
             const token = localStorage.getItem('admin_token');
-            const res = await fetch(`http://localhost:3001/api/orders/${orderId}`, {
+            const res = await fetch(`/api/orders/${orderId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -70,7 +70,7 @@ export default function AdminDashboard() {
 
         try {
             const token = localStorage.getItem('admin_token');
-            const res = await fetch(`http://localhost:3001/api/orders`, {
+            const res = await fetch(`/api/orders`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -87,7 +87,7 @@ export default function AdminDashboard() {
 
     const fetchOrders = () => {
         const token = localStorage.getItem('admin_token');
-        fetch('http://localhost:3001/api/orders', {
+        fetch('/api/orders', {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -113,7 +113,7 @@ export default function AdminDashboard() {
         const token = localStorage.getItem('admin_token');
         if (!token) return;
 
-        const eventSource = new EventSource(`http://localhost:3001/api/orders/stream?token=${token}`);
+        const eventSource = new EventSource(`/api/orders/stream?token=${token}`);
 
         eventSource.onmessage = (event) => {
             try {

@@ -8,7 +8,7 @@ export default function LandingPage() {
     const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
 
     useEffect(() => {
-        fetch('http://localhost:3001/api/products')
+        fetch('/api/products')
             .then(res => res.json())
             .then(data => {
                 setProducts(data);
@@ -22,7 +22,7 @@ export default function LandingPage() {
 
     // Fetch banners
     useEffect(() => {
-        fetch('http://localhost:3001/api/banners')
+        fetch('/api/banners')
             .then(res => res.json())
             .then(data => {
                 if (data && data.length > 0) {

@@ -95,7 +95,7 @@ app.post('/api/products', authenticateToken, upload.array('images', 5), (req, re
     const { name, description, price, stock, sizes, colors, category } = req.body;
 
     // Process new uploaded images
-    const uploadedUrls = req.files ? req.files.map(file => `http://localhost:${port}/uploads/${file.filename}`) : [];
+    const uploadedUrls = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
 
     // We still maintain imageUrl for backwards compatibility, using the first image if available
     let imageUrl = req.body.imageUrl || (uploadedUrls.length > 0 ? uploadedUrls[0] : '');
@@ -381,7 +381,7 @@ app.post('/api/banners', authenticateToken, upload.single('image'), (req, res) =
     let imageUrl = '';
 
     if (req.file) {
-        imageUrl = `http://localhost:${port}/uploads/${req.file.filename}`;
+        imageUrl = `/uploads/${req.file.filename}`;
     }
 
     try {
@@ -425,6 +425,13 @@ app.delete('/api/banners/:id', authenticateToken, (req, res) => {
 });
 
 // --- DEPLOYMENT CONFIGURATION ---
+// Sanitize old absolute localhost URLs to relative URLs in DB
+try {
+    db.prepare(`UPDATE products SET imageUrl = REPLACE(imageUrl, 'http://localhost:3001', '') WHERE imageUrl LIKE 'http://localhost:3001%'`).run();
+    db.prepare(`UPDATE products SET images = REPLACE(images, 'http://localhost:3001', '') WHERE images LIKE '%http://localhost:3001%'`).run();
+    db.prepare(`UPDATE banners SET imageUrl = REPLACE(imageUrl, 'http://localhost:3001', '') WHERE imageUrl LIKE 'http://localhost:3001%'`).run();
+} catch (e) { console.error('Sanitization error', e); }
+
 // Serve the built Vite frontend statically
 const distPath = path.join(__dirname, '../dist');
 if (fs.existsSync(distPath)) {
