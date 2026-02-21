@@ -91,7 +91,7 @@ app.get('/api/products/:id', (req, res) => {
 });
 
 // Add a product (Admin)
-app.post('/api/products', authenticateToken, upload.array('images', 5), (req, res) => {
+app.post('/api/products', authenticateToken, upload.array('images'), (req, res) => {
     const { name, description, price, stock, sizes, colors, category } = req.body;
 
     // Process new uploaded images
@@ -117,7 +117,7 @@ app.post('/api/products', authenticateToken, upload.array('images', 5), (req, re
 });
 
 // Update a product (Admin)
-app.put('/api/products/:id', authenticateToken, upload.array('images', 5), (req, res) => {
+app.put('/api/products/:id', authenticateToken, upload.array('images'), (req, res) => {
     const { id } = req.params;
     const { name, description, price, stock, sizes, colors, category } = req.body;
 

@@ -13,7 +13,14 @@ export default function AdminProducts() {
         name: '', description: '', price: 0, stock: 0, sizes: 'S, M, L', colors: 'Black, White', category: ''
     });
     const [imageFiles, setImageFiles] = useState([]);
+    const [previewUrls, setPreviewUrls] = useState([]);
     const [existingImages, setExistingImages] = useState([]);
+
+    useEffect(() => {
+        const urls = imageFiles.map(file => URL.createObjectURL(file));
+        setPreviewUrls(urls);
+        return () => urls.forEach(url => URL.revokeObjectURL(url));
+    }, [imageFiles]);
     const [settings, setSettings] = useState({ delivery_inside: '60', delivery_outside: '120' });
     const [savingSettings, setSavingSettings] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -92,6 +99,15 @@ export default function AdminProducts() {
     };
 
     const handleSave = async () => {
+        if (!formData.name || !formData.name.trim()) {
+            addToast('Product name is required.', 'error');
+            return;
+        }
+        if (!formData.price || isNaN(formData.price) || formData.price <= 0) {
+            addToast('A valid product price greater than 0 is required.', 'error');
+            return;
+        }
+
         try {
             const token = localStorage.getItem('admin_token');
             const sizesArr = formData.sizes.split(',').map(s => s.trim()).filter(Boolean);
@@ -172,6 +188,10 @@ export default function AdminProducts() {
 
     const handleRemoveExistingImage = (index) => {
         setExistingImages(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleRemoveNewImage = (index) => {
+        setImageFiles(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleSaveSettings = async () => {
@@ -384,24 +404,47 @@ export default function AdminProducts() {
                                 </div>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', marginTop: 'var(--space-md)' }}>
-                                    <label style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>PRODUCT IMAGES (Max 5)</label>
-                                    <input type="file" multiple accept="image/*" onChange={e => setImageFiles(e.target.files)} style={{ padding: '12px', border: '1px dashed var(--color-border)', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--color-surface-dim)' }} />
-                                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>Select multiple files by holding Ctrl/Cmd.</span>
-                                </div>
+                                    <label style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>PRODUCT IMAGES</label>
 
-                                {existingImages.length > 0 && (
-                                    <div style={{ marginTop: 'var(--space-md)' }}>
-                                        <label style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>CURRENT IMAGES</label>
-                                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                                            {existingImages.map((imgUrl, index) => (
-                                                <div key={index} style={{ position: 'relative', width: '64px', height: '64px' }}>
-                                                    <img src={imgUrl} alt="Product" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }} />
-                                                    <button onClick={() => handleRemoveExistingImage(index)} style={{ position: 'absolute', top: '-6px', right: '-6px', backgroundColor: '#d9381e', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', cursor: 'pointer' }}>&times;</button>
-                                                </div>
-                                            ))}
-                                        </div>
+                                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                                        {/* Existing Images */}
+                                        {existingImages.map((imgUrl, index) => (
+                                            <div key={`existing-${index}`} style={{ position: 'relative', width: '80px', height: '80px' }}>
+                                                <img src={imgUrl} alt="Product" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }} />
+                                                <button type="button" onClick={() => handleRemoveExistingImage(index)} style={{ position: 'absolute', top: '-6px', right: '-6px', backgroundColor: '#d9381e', color: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', cursor: 'pointer', zIndex: 10, boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} title="Remove existing image">&times;</button>
+                                            </div>
+                                        ))}
+
+                                        {/* New Images */}
+                                        {imageFiles.map((file, index) => (
+                                            <div key={`new-${index}`} style={{ position: 'relative', width: '80px', height: '80px' }}>
+                                                <img src={previewUrls[index]} alt="New Product" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'var(--radius-sm)', border: '2px solid var(--color-primary)' }} />
+                                                <div style={{ position: 'absolute', bottom: '4px', left: '50%', transform: 'translateX(-50%)', fontSize: '10px', backgroundColor: 'var(--color-primary)', color: 'white', padding: '2px 6px', borderRadius: '12px', whiteSpace: 'nowrap', fontWeight: 600, boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>New</div>
+                                                <button type="button" onClick={() => handleRemoveNewImage(index)} style={{ position: 'absolute', top: '-6px', right: '-6px', backgroundColor: '#d9381e', color: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', cursor: 'pointer', zIndex: 10, boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} title="Remove new image">&times;</button>
+                                            </div>
+                                        ))}
+
+                                        {/* Add Image Button */}
+                                        <label style={{ width: '80px', height: '80px', border: '2px dashed var(--color-border)', borderRadius: 'var(--radius-sm)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backgroundColor: 'var(--color-surface-dim)', color: 'var(--color-text-secondary)' }}>
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '4px' }}><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                            <span style={{ fontSize: '10px', fontWeight: 600 }}>Add Image</span>
+                                            <input
+                                                type="file"
+                                                multiple
+                                                accept="image/*"
+                                                style={{ display: 'none' }}
+                                                onClick={(e) => { e.target.value = null; }}
+                                                onChange={e => {
+                                                    if (e.target.files && e.target.files.length > 0) {
+                                                        const newFiles = Array.from(e.target.files);
+                                                        setImageFiles(prev => [...prev, ...newFiles]);
+                                                    }
+                                                }}
+                                            />
+                                        </label>
                                     </div>
-                                )}
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '8px' }}>Click "Add Image" to upload photos. They will appear here immediately.</span>
+                                </div>
                             </div>
                         </div>
 

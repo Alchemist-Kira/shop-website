@@ -9,7 +9,14 @@ export default function AdminBanners() {
 
     // Form state for adding a new banner
     const [formData, setFormData] = useState({ title: '', subtitle: '' });
-    const [imageFile, setImageFile] = useState(null);
+    const [imageFiles, setImageFiles] = useState([]);
+    const [previewUrls, setPreviewUrls] = useState([]);
+
+    useEffect(() => {
+        const urls = imageFiles.map(file => URL.createObjectURL(file));
+        setPreviewUrls(urls);
+        return () => urls.forEach(url => URL.revokeObjectURL(url));
+    }, [imageFiles]);
 
     useEffect(() => {
         fetchBanners();
@@ -30,47 +37,55 @@ export default function AdminBanners() {
             });
     };
 
-    const handleFileChange = (e) => {
-        if (e.target.files && e.target.files[0]) {
-            setImageFile(e.target.files[0]);
-        }
+    const handleRemoveNewImage = (index) => {
+        setImageFiles(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleAddBanner = async (e) => {
         e.preventDefault();
-        if (!imageFile) {
-            addToast("Please select an image file first.", "error");
+        if (imageFiles.length === 0) {
+            addToast("Please select at least one image file first.", "error");
             return;
         }
 
         setIsSaving(true);
-        const submitData = new FormData();
-        submitData.append('title', formData.title);
-        submitData.append('subtitle', formData.subtitle);
-        submitData.append('image', imageFile);
-
         const token = localStorage.getItem('admin_token');
-        try {
-            const response = await fetch('/api/banners', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: submitData
-            });
+        let successCount = 0;
+        let failCount = 0;
 
-            if (response.ok) {
-                addToast("Banner added successfully", "success");
+        try {
+            // Upload each selected banner image one by one
+            for (const file of imageFiles) {
+                const submitData = new FormData();
+                submitData.append('title', formData.title);
+                submitData.append('subtitle', formData.subtitle);
+                submitData.append('image', file);
+
+                const response = await fetch('/api/banners', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: submitData
+                });
+
+                if (response.ok) {
+                    successCount++;
+                } else {
+                    failCount++;
+                }
+            }
+
+            if (successCount > 0) {
+                addToast(`Successfully added ${successCount} banner${successCount > 1 ? 's' : ''}`, "success");
                 setFormData({ title: '', subtitle: '' });
-                setImageFile(null);
-                // Reset standard file input via direct DOM access since we only have one
-                const fileInput = document.getElementById('banner-image-input');
-                if (fileInput) fileInput.value = '';
+                setImageFiles([]);
                 fetchBanners();
-            } else {
-                addToast("Failed to add banner", "error");
+            }
+            if (failCount > 0) {
+                addToast(`Failed to add ${failCount} banner${failCount > 1 ? 's' : ''}`, "error");
             }
         } catch (error) {
             console.error("Add banner error:", error);
-            addToast("Network error while adding banner", "error");
+            addToast("Network error while adding banners", "error");
         } finally {
             setIsSaving(false);
         }
@@ -109,14 +124,36 @@ export default function AdminBanners() {
                     <h2 style={{ fontSize: '1.25rem', marginBottom: 'var(--space-md)', fontWeight: 600 }}>Upload New Banner</h2>
                     <form onSubmit={handleAddBanner} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <label style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>IMAGE FILE *</label>
-                            <input
-                                id="banner-image-input"
-                                type="file"
-                                accept="image/*"
-                                onChange={handleFileChange}
-                                style={{ padding: '8px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)' }}
-                            />
+                            <label style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>IMAGE FILES *</label>
+
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                {/* New Images */}
+                                {imageFiles.map((file, index) => (
+                                    <div key={`new-banner-${index}`} style={{ position: 'relative', width: '64px', height: '64px' }}>
+                                        <img src={previewUrls[index]} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'var(--radius-sm)', border: '2px solid var(--color-primary)' }} />
+                                        <button type="button" onClick={() => handleRemoveNewImage(index)} style={{ position: 'absolute', top: '-6px', right: '-6px', backgroundColor: '#d9381e', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', cursor: 'pointer', zIndex: 10 }} title="Remove image">&times;</button>
+                                    </div>
+                                ))}
+
+                                {/* Add Image Button */}
+                                <label style={{ width: '64px', height: '64px', border: '2px dashed var(--color-border)', borderRadius: 'var(--radius-sm)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backgroundColor: 'var(--color-surface-dim)', color: 'var(--color-text-secondary)' }}>
+                                    <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>+</span>
+                                    <input
+                                        type="file"
+                                        multiple
+                                        accept="image/*"
+                                        style={{ display: 'none' }}
+                                        onClick={(e) => { e.target.value = null; }}
+                                        onChange={e => {
+                                            if (e.target.files && e.target.files.length > 0) {
+                                                const newFiles = Array.from(e.target.files);
+                                                setImageFiles(prev => [...prev, ...newFiles]);
+                                            }
+                                        }}
+                                    />
+                                </label>
+                            </div>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>Select multiple images to create banners with identical text.</span>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <label style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>TITLE (Optional)</label>
@@ -141,10 +178,10 @@ export default function AdminBanners() {
                         <button
                             type="submit"
                             className="btn btn-primary"
-                            disabled={isSaving || !imageFile}
+                            disabled={isSaving || imageFiles.length === 0}
                             style={{ padding: '12px', marginTop: 'var(--space-sm)' }}
                         >
-                            {isSaving ? 'Uploading...' : 'Save Banner'}
+                            {isSaving ? 'Uploading...' : 'Save Banners'}
                         </button>
                     </form>
                 </div>
