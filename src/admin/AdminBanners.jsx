@@ -126,6 +126,18 @@ export default function AdminBanners() {
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <label style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>IMAGE FILES *</label>
 
+                            <div style={{ backgroundColor: 'var(--color-surface-dim)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', marginBottom: 'var(--space-md)' }}>
+                                <h4 style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                    Banner Guidelines
+                                </h4>
+                                <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '0.75rem', color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
+                                    <li><strong>Dimensions:</strong> Wide Landscape (1920x600px) is ideal.</li>
+                                    <li><strong>Formats:</strong> JPG, PNG, or WebP.</li>
+                                    <li><strong>Size:</strong> Max 1MB (Critical for homepage speed).</li>
+                                </ul>
+                            </div>
+
                             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                                 {/* New Images */}
                                 {imageFiles.map((file, index) => (
@@ -153,7 +165,7 @@ export default function AdminBanners() {
                                     />
                                 </label>
                             </div>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>Select multiple images to create banners with identical text.</span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>Select images to create banners. They share the same text below.</span>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <label style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>TITLE (Optional)</label>

@@ -10,33 +10,24 @@ Your website currently uses **SQLite** (`shop.db`), which is a file-based databa
 
 ---
 
-## 🏗️ Recommended: Deployment on Render.com
+## 🏗️ Deployment on Traditional Hosting (ExonHost / BD Providers)
 
-Render is the easiest "drop-in" solution for your React + Express + SQLite setup.
+Unlike Vercel, traditional hosting (Shared or VPS) usually has **Persistent Storage** by default. Your files stay there unless you delete them.
 
-### 1. Prepare your code
-Ensure your `.env` file is NOT uploaded to GitHub (it should be in `.gitignore`). You will add these variables manually in the Render dashboard.
+### To prevent data loss on every deploy:
 
-### 2. Create a Web Service on Render
-1.  Connect your GitHub repository to Render.
-2.  Select **Web Service**.
-3.  Set the following:
-    *   **Build Command**: `npm install && npm run build`
-    *   **Start Command**: `node server/index.js`
-4.  In the **Environment** tab, add your variables from `.env`:
-    *   `JWT_SECRET`
-    *   `ADMIN_USERNAME`
-    *   `ADMIN_PASSWORD`
-    *   `PORT=10000` (Render uses 10000 by default)
-
-### 3. Add a Persistent Disk (CRITICAL)
-To keep your data safe:
-1.  Go to the **Advanced** section in Render.
-2.  Add a **Disk**.
-3.  Set **Mount Path** to `/var/data`.
-4.  Update your `server/db.js` to point to `/var/data/shop.db` instead of just `shop.db`.
+1.  **NEVER upload your local `shop.db` file**: 
+    Your local `shop.db` is empty or has test data. The server's `shop.db` contains your real orders. If you upload your local one, you will overwrite (delete) all your real orders.
+2.  **Use `.gitignore`**: 
+    Ensure `shop.db` is in your `.gitignore` file. This way, if you deploy via GitHub, the database file will never be part of the upload. The server will create its own `shop.db` the first time it runs and keep it forever.
+3.  **Deploying via File Manager/FTP**:
+    If you manually drag and drop files to your hosting, **Skip** the `shop.db` file. Leave the one on the server alone.
+4.  **Backend Uploads Folder**:
+    Similarly, never delete the `server/uploads` folder on the server. That's where your live product images are stored.
 
 ---
+
+## ☁️ Deployment on Cloud Platforms (Render / Railway)
 
 ## ⚡ alternative: Deployment on Vercel
 

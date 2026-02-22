@@ -15,6 +15,7 @@ export default function ProductPage() {
     const [imagesList, setImagesList] = useState([]);
     const [quantity, setQuantity] = useState(1);
     const [zoomProps, setZoomProps] = useState({ show: false, x: 0, y: 0 });
+    const [showLightbox, setShowLightbox] = useState(false);
 
     useEffect(() => {
         // Extract just the ID from the slug (e.g., '1-midnight-silk' -> '1')
@@ -156,12 +157,24 @@ export default function ProductPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     {/* Main Active Image with proper aspect ratio container to prevent overlap/overflow */}
                     <div
-                        style={{ position: 'relative', width: '100%', aspectRatio: '3/4', backgroundColor: '#f5f5f5', borderRadius: 'var(--radius-md)', overflow: 'hidden', cursor: 'crosshair', touchAction: 'none' }}
+                        className="product-main-image-wrapper"
+                        style={{
+                            position: 'relative',
+                            width: '100%',
+                            aspectRatio: '3/4',
+                            backgroundColor: '#f5f5f5',
+                            borderRadius: 'var(--radius-md)',
+                            overflow: 'hidden',
+                            cursor: 'crosshair',
+                            touchAction: 'pan-y' // Allow vertical scrolling on touch
+                        }}
                         onMouseMove={handleMouseMove}
-                        onTouchMove={handleMouseMove}
-                        onTouchStart={handleMouseMove}
                         onMouseLeave={() => setZoomProps({ show: false, x: 0, y: 0 })}
                         onTouchEnd={() => setZoomProps({ show: false, x: 0, y: 0 })}
+                        onClick={() => {
+                            // On small screens, clicking usually means 'expand'
+                            if (window.innerWidth <= 768) setShowLightbox(true);
+                        }}
                     >
                         <img
                             src={activeImage}
@@ -169,12 +182,31 @@ export default function ProductPage() {
                             style={{
                                 width: '100%',
                                 height: '100%',
-                                objectFit: 'contain', // contain instead of cover to prevent massive zooming and clipping
+                                objectFit: 'contain',
                                 transform: zoomProps.show ? 'scale(2.5)' : 'scale(1)',
                                 transformOrigin: `${zoomProps.x}% ${zoomProps.y}%`,
                                 transition: zoomProps.show ? 'none' : 'transform 0.3s ease'
                             }}
                         />
+
+                        {/* Mobile Zoom Hint */}
+                        <div className="mobile-only" style={{
+                            position: 'absolute',
+                            bottom: '1rem',
+                            right: '1rem',
+                            backgroundColor: 'rgba(0,0,0,0.5)',
+                            color: 'white',
+                            padding: '4px 10px',
+                            borderRadius: '20px',
+                            fontSize: '0.75rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            pointerEvents: 'none'
+                        }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+                            Tap to Zoom
+                        </div>
 
                         {/* Image Navigation Arrows */}
                         {imagesList.length > 1 && (
@@ -211,10 +243,11 @@ export default function ProductPage() {
 
                     {/* Thumbnails Cycler */}
                     {imagesList.length > 1 && (
-                        <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+                        <div className="product-thumbnail-container" style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
                             {imagesList.map((img, idx) => (
                                 <button
                                     key={idx}
+                                    className="product-thumbnail-item"
                                     onClick={() => setActiveImage(img)}
                                     style={{
                                         width: '80px',
@@ -370,13 +403,102 @@ export default function ProductPage() {
             {/* Breakout grid configuration for CSS media queries fix */}
             <style dangerouslySetInnerHTML={{
                 __html: `
+                .mobile-only {
+                    display: none;
+                }
+
                 @media (max-width: 768px) {
                     .container > div {
                         grid-template-columns: 1fr !important;
-                        gap: 2rem !important;
+                        gap: 1.5rem !important;
+                    }
+                    .product-main-image-wrapper {
+                        aspect-ratio: 1 / 1 !important;
+                        max-height: 400px;
+                        margin: 0 auto;
+                    }
+                    .product-thumbnail-container {
+                        gap: 0.4rem !important;
+                        margin-bottom: 0px !important;
+                    }
+                    .product-thumbnail-item {
+                        width: 50px !important;
+                        height: 67px !important;
+                    }
+                    .mobile-only {
+                        display: flex;
                     }
                 }
             `}} />
+
+            {/* Lightbox / Fullscreen Zoom Modal */}
+            {showLightbox && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        backgroundColor: 'black',
+                        zIndex: 2000,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '1rem',
+                        overflow: 'hidden'
+                    }}
+                    onClick={() => setShowLightbox(false)}
+                >
+                    <button
+                        onClick={(e) => { e.stopPropagation(); setShowLightbox(false); }}
+                        style={{
+                            position: 'absolute',
+                            top: '2rem',
+                            right: '2rem',
+                            backgroundColor: 'white',
+                            color: 'black',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '44px',
+                            height: '44px',
+                            fontSize: '1.5rem',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            zIndex: 2001,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                        }}
+                    >
+                        &times;
+                    </button>
+
+                    <div
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            overflow: 'auto' // Allow panning if image is larger
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <img
+                            src={activeImage}
+                            alt={product.name}
+                            style={{
+                                maxWidth: '100%',
+                                maxHeight: '100%',
+                                objectFit: 'contain',
+                                touchAction: 'pinch-zoom' // Explicitly allow pinch-zoom
+                            }}
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

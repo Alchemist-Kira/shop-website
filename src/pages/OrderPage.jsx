@@ -17,6 +17,12 @@ export default function OrderPage() {
     const [settings, setSettings] = useState({ delivery_inside: '60', delivery_outside: '120' });
 
     useEffect(() => {
+        if (orderSuccess) {
+            window.scrollTo(0, 0);
+        }
+    }, [orderSuccess]);
+
+    useEffect(() => {
         // Load cart from localStorage
         const savedCart = JSON.parse(localStorage.getItem('shop_cart') || '[]');
         setCart(savedCart);
@@ -67,7 +73,7 @@ export default function OrderPage() {
         // Validate BD phone number (relaxed prefix for testing purposes)
         const phoneRegex = /^(?:\+880|880|0)?1\d{9}$/;
         if (!phoneRegex.test(formData.phone.replace(/[\s-]/g, ''))) {
-            addToast('Please enter a valid 11-digit Bangladesh phone number.', 'error');
+            addToast('Please enter a valid 11-digit phone number.', 'error');
             return;
         }
 

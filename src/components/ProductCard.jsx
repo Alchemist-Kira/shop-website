@@ -89,15 +89,35 @@ export default function ProductCard({ product }) {
                 )}
             </div>
 
-            <div className="product-card-body" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginBottom: 'var(--space-xs)' }}>
+            <div className="product-card-body" style={{ padding: 'var(--space-md)', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                <style dangerouslySetInnerHTML={{
+                    __html: `
+                    @media (max-width: 768px) {
+                        .product-card-info-wrapper {
+                            margin-bottom: 4px !important;
+                        }
+                        .product-card-body {
+                            padding: 10px !important;
+                        }
+                        .product-card-price-row {
+                            flex-direction: column !important;
+                            align-items: flex-start !important;
+                            gap: 2px !important;
+                        }
+                        .view-details-btn {
+                            margin-top: auto !important;
+                        }
+                    }
+                `}} />
+                <div className="product-card-info-wrapper" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginBottom: 'var(--space-md)' }}>
                     <h3 className="product-card-title" style={{
                         fontWeight: 500,
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         marginBottom: '4px',
-                        width: '100%'
+                        width: '100%',
+                        fontSize: '1rem'
                     }}>
                         {product.name}
                     </h3>
@@ -118,6 +138,7 @@ export default function ProductCard({ product }) {
                     </div>
                 </div>
                 <button
+                    className="view-details-btn"
                     style={{
                         width: '100%',
                         padding: '0.75rem',
@@ -127,7 +148,8 @@ export default function ProductCard({ product }) {
                         borderRadius: 'var(--radius-sm)',
                         fontWeight: 600,
                         transition: 'var(--transition-normal)',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        marginTop: 'auto'
                     }}
                 >
                     View Details

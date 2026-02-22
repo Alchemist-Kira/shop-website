@@ -23,6 +23,8 @@ export default function AdminProducts() {
     }, [imageFiles]);
     const [searchQuery, setSearchQuery] = useState('');
     const [availableCategories, setAvailableCategories] = useState([]);
+    const [categoryFilter, setCategoryFilter] = useState('');
+    const [sortBy, setSortBy] = useState('newest');
 
     const fetchProducts = () => {
         const token = localStorage.getItem('admin_token');
@@ -194,11 +196,67 @@ export default function AdminProducts() {
         setImageFiles(prev => prev.filter((_, i) => i !== index));
     };
 
+    const filteredAndSortedProducts = useMemo(() => {
+        let result = [...products];
+
+        // 1. Search Filter
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            result = result.filter(p =>
+                p.name.toLowerCase().includes(query) ||
+                (p.category && p.category.toLowerCase().includes(query)) ||
+                (p.description && p.description.toLowerCase().includes(query))
+            );
+        }
+
+        // 2. Category Filter
+        if (categoryFilter) {
+            result = result.filter(p => p.category === categoryFilter);
+        }
+
+        // 3. Sorting
+        result.sort((a, b) => {
+            if (sortBy === 'newest') return b.id - a.id;
+            if (sortBy === 'oldest') return a.id - b.id;
+            if (sortBy === 'price_low') return a.price - b.price;
+            if (sortBy === 'price_high') return b.price - a.price;
+            if (sortBy === 'stock_low') return a.stock - b.stock;
+            if (sortBy === 'stock_high') return b.stock - a.stock;
+            return 0;
+        });
+
+        return result;
+    }, [products, searchQuery, categoryFilter, sortBy]);
+
     return (
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-xl)', flexWrap: 'wrap', gap: '1rem' }}>
                 <h1 style={{ fontSize: '2rem', fontWeight: 600 }}>Inventory Management</h1>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <select
+                            value={categoryFilter}
+                            onChange={e => setCategoryFilter(e.target.value)}
+                            style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', outline: 'none', fontSize: '0.875rem', backgroundColor: 'white' }}
+                        >
+                            <option value="">All Categories</option>
+                            {availableCategories.map((cat, idx) => (
+                                <option key={idx} value={cat}>{cat}</option>
+                            ))}
+                        </select>
+                        <select
+                            value={sortBy}
+                            onChange={e => setSortBy(e.target.value)}
+                            style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', outline: 'none', fontSize: '0.875rem', backgroundColor: 'white' }}
+                        >
+                            <option value="newest">Sort: Newest First</option>
+                            <option value="oldest">Sort: Oldest First</option>
+                            <option value="price_low">Price: Low to High</option>
+                            <option value="price_high">Price: High to Low</option>
+                            <option value="stock_low">Stock: Low to High</option>
+                            <option value="stock_high">Stock: High to Low</option>
+                        </select>
+                    </div>
                     <input
                         type="text"
                         placeholder="Search products..."
@@ -231,12 +289,7 @@ export default function AdminProducts() {
                             </tr>
                         </thead>
                         <tbody>
-                            {products.filter(p =>
-                                !searchQuery.trim() ||
-                                p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                (p.category && p.category.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                                (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
-                            ).map(product => {
+                            {filteredAndSortedProducts.map(product => {
                                 const sizesText = typeof product.sizes === 'string' ? JSON.parse(product.sizes).join(', ') : (Array.isArray(product.sizes) ? product.sizes.join(', ') : '');
                                 const colorsText = typeof product.colors === 'string' ? JSON.parse(product.colors).join(', ') : (Array.isArray(product.colors) ? product.colors.join(', ') : '');
 
@@ -265,8 +318,16 @@ export default function AdminProducts() {
                                             <span style={{ fontWeight: 600, color: product.stock === 0 ? '#d9381e' : (product.stock <= 5 ? '#e67300' : 'inherit') }}>{product.stock}</span>
                                         </td>
                                         <td style={{ padding: '1rem', textAlign: 'right' }}>
-                                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                                <button onClick={() => openEditModal(product)} style={{ padding: '4px 12px', border: '1px solid var(--color-border)', borderRadius: '4px', fontSize: '0.875rem', cursor: 'pointer' }}>Edit</button>
+                                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                                <a
+                                                    href={`/product/${product.id}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    style={{ padding: '4px 12px', border: '1px solid var(--color-border)', borderRadius: '4px', fontSize: '0.875rem', cursor: 'pointer', textDecoration: 'none', color: 'var(--color-primary)', fontWeight: 600, backgroundColor: 'white' }}
+                                                >
+                                                    View
+                                                </a>
+                                                <button onClick={() => openEditModal(product)} style={{ padding: '4px 12px', border: '1px solid var(--color-border)', borderRadius: '4px', fontSize: '0.875rem', cursor: 'pointer', backgroundColor: 'white' }}>Edit</button>
                                                 <button onClick={() => handleDelete(product.id)} style={{ padding: '4px 12px', border: '1px solid #ffefeb', backgroundColor: '#ffefeb', color: '#d9381e', borderRadius: '4px', fontSize: '0.875rem', cursor: 'pointer' }}>Delete</button>
                                             </div>
                                         </td>
@@ -339,7 +400,7 @@ export default function AdminProducts() {
                                         <input type="text" placeholder="e.g. S, M, L, XL" value={formData.sizes} onChange={e => setFormData({ ...formData, sizes: e.target.value })} style={{ padding: '12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '1rem' }} />
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                                        <label style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>AVAILABLE COLORS (COMMA SEPARATED)</label>
+                                        <label style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>AVAILABLE COLORS</label>
                                         <input type="text" placeholder="e.g. Red, Blue, Green" value={formData.colors} onChange={e => setFormData({ ...formData, colors: e.target.value })} style={{ padding: '12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '1rem' }} />
                                     </div>
                                 </div>
@@ -351,6 +412,18 @@ export default function AdminProducts() {
 
                                 <div style={{ display: 'flex', flexDirection: 'column', marginTop: 'var(--space-md)' }}>
                                     <label style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>PRODUCT IMAGES</label>
+
+                                    <div style={{ backgroundColor: 'var(--color-surface-dim)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', marginBottom: 'var(--space-md)' }}>
+                                        <h4 style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                            Upload Guidelines
+                                        </h4>
+                                        <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '0.75rem', color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
+                                            <li><strong>Orientation:</strong> Portrait (3:4 or 1:1 ratio) is highly recommended.</li>
+                                            <li><strong>Formats:</strong> JPG, PNG, or WebP.</li>
+                                            <li><strong>Size:</strong> Max 2MB per image for fast loading.</li>
+                                        </ul>
+                                    </div>
 
                                     <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                                         {/* Existing Images */}
@@ -389,7 +462,7 @@ export default function AdminProducts() {
                                             />
                                         </label>
                                     </div>
-                                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '8px' }}>Click "Add Image" to upload photos. They will appear here immediately.</span>
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '8px' }}>Select photos to upload.</span>
                                 </div>
                             </div>
                         </div>
