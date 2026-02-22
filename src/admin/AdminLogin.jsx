@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 export default function AdminLogin() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
@@ -25,7 +26,11 @@ export default function AdminLogin() {
             const data = await response.json();
 
             if (response.ok) {
-                localStorage.setItem('admin_token', data.token);
+                if (rememberMe) {
+                    localStorage.setItem('admin_token', data.token);
+                } else {
+                    sessionStorage.setItem('admin_token', data.token);
+                }
                 // Dispatch event so layout can update
                 window.dispatchEvent(new Event('authStatusChanged'));
                 navigate('/admin');
@@ -59,7 +64,7 @@ export default function AdminLogin() {
             }}>
                 <div style={{ textAlign: 'center', marginBottom: 'var(--space-lg)' }}>
                     <h1 style={{ fontSize: '2.5rem', letterSpacing: '0.05em', fontWeight: 700, marginBottom: 'var(--space-xs)', fontFamily: '"Playfair Display", serif' }}>Marbilo</h1>
-                    <p style={{ color: 'var(--color-text-secondary)' }}>Admin Authentication</p>
+                    <p style={{ color: 'var(--color-text-secondary)' }}>User Authentication</p>
                 </div>
 
                 {error && (
@@ -115,18 +120,30 @@ export default function AdminLogin() {
                             onBlur={e => e.target.style.borderColor = 'var(--color-border)'}
                         />
                     </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input
+                            type="checkbox"
+                            id="rememberMe"
+                            checked={rememberMe}
+                            onChange={(e) => setRememberMe(e.target.checked)}
+                            style={{ cursor: 'pointer' }}
+                        />
+                        <label htmlFor="rememberMe" style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', cursor: 'pointer' }}>
+                            Remember Me
+                        </label>
+                    </div>
                     <button
                         type="submit"
                         className="btn btn-primary"
                         disabled={loading}
                         style={{ marginTop: 'var(--space-sm)' }}
                     >
-                        {loading ? 'Authenticating...' : 'Secure Login'}
+                        {loading ? 'Authenticating...' : 'Login'}
                     </button>
                 </form>
 
                 <div style={{ textAlign: 'center', marginTop: 'var(--space-lg)' }}>
-                    <a href="/" style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>&larr; Back to Boutique</a>
+                    <a href="/" style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>&larr; Back to Marbilo</a>
                 </div>
             </div>
         </div>

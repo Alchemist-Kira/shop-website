@@ -7,7 +7,6 @@ export default function OrderPage() {
     const [cart, setCart] = useState([]);
     const [formData, setFormData] = useState({
         name: '',
-        email: '',
         phone: '',
         shippingArea: '',
         address: '',
@@ -64,6 +63,14 @@ export default function OrderPage() {
 
     const handleCheckout = async (e) => {
         e.preventDefault();
+
+        // Validate BD phone number (relaxed prefix for testing purposes)
+        const phoneRegex = /^(?:\+880|880|0)?1\d{9}$/;
+        if (!phoneRegex.test(formData.phone.replace(/[\s-]/g, ''))) {
+            addToast('Please enter a valid 11-digit Bangladesh phone number.', 'error');
+            return;
+        }
+
         setPlacingOrder(true);
 
         try {
@@ -72,7 +79,6 @@ export default function OrderPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     customerName: formData.name,
-                    customerEmail: formData.email,
                     customerPhone: formData.phone,
                     shippingArea: formData.shippingArea,
                     customerAddress: formData.address,
@@ -100,9 +106,12 @@ export default function OrderPage() {
 
     if (orderSuccess) {
         return (
-            <div className="container section text-center" style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div className="container section text-center" style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
                 <h1 style={{ fontSize: '3rem', marginBottom: 'var(--space-md)', color: 'var(--color-accent)' }}>Thank You</h1>
-                <p style={{ fontSize: '1.25rem', marginBottom: 'var(--space-lg)' }}>Your elegant order has been placed successfully.</p>
+                <p style={{ fontSize: '1.25rem', marginBottom: 'var(--space-lg)', lineHeight: '1.8' }}>
+                    Your Marbilo order has been placed successfully.<br />
+                    <span style={{ fontSize: '1.1rem', color: 'var(--color-text-secondary)' }}>We will contact you shortly to confirm your order.</span>
+                </p>
                 <Link to="/" className="btn btn-primary">Continue Shopping</Link>
             </div>
         );
@@ -115,7 +124,7 @@ export default function OrderPage() {
             {cart.length === 0 ? (
                 <div className="text-center">
                     <p style={{ marginBottom: 'var(--space-lg)', fontSize: '1.25rem' }}>Your cart is empty.</p>
-                    <Link to="/" className="btn btn-primary">Discover Dresses</Link>
+                    <Link to="/" className="btn btn-primary">Discover Panjabis</Link>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-lg" style={{ alignItems: 'start' }}>
@@ -203,33 +212,18 @@ export default function OrderPage() {
                                 />
                             </div>
 
-                            <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
-                                <div style={{ flex: 1 }}>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', fontWeight: 500 }}>Phone</label>
-                                    <input
-                                        type="tel"
-                                        required
-                                        placeholder="01XXXXXXXXX"
-                                        value={formData.phone}
-                                        onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                                        style={{ width: '100%', padding: '12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', outline: 'none', transition: 'border-color 0.2s' }}
-                                        onFocus={e => e.target.style.borderColor = 'var(--color-text-primary)'}
-                                        onBlur={e => e.target.style.borderColor = 'var(--color-border)'}
-                                    />
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', fontWeight: 500 }}>Email Address</label>
-                                    <input
-                                        type="email"
-                                        required
-                                        placeholder="Email Address"
-                                        value={formData.email}
-                                        onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                        style={{ width: '100%', padding: '12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', outline: 'none', transition: 'border-color 0.2s' }}
-                                        onFocus={e => e.target.style.borderColor = 'var(--color-text-primary)'}
-                                        onBlur={e => e.target.style.borderColor = 'var(--color-border)'}
-                                    />
-                                </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', fontWeight: 500 }}>Phone</label>
+                                <input
+                                    type="tel"
+                                    required
+                                    placeholder="01XXXXXXXXX"
+                                    value={formData.phone}
+                                    onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                                    style={{ width: '100%', padding: '12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', outline: 'none', transition: 'border-color 0.2s' }}
+                                    onFocus={e => e.target.style.borderColor = 'var(--color-text-primary)'}
+                                    onBlur={e => e.target.style.borderColor = 'var(--color-border)'}
+                                />
                             </div>
 
                             <div>

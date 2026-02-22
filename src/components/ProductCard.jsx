@@ -28,18 +28,35 @@ export default function ProductCard({ product }) {
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
         >
-            <div style={{ position: 'relative', width: '100%', aspectRatio: '4/5', overflow: 'hidden' }}>
-                <img
-                    src={product.imageUrl}
-                    alt={product.name}
-                    style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        transition: 'transform 0.5s ease',
-                        transform: hovered ? 'scale(1.05)' : 'scale(1)'
-                    }}
-                />
+            <div style={{ position: 'relative', width: '100%', paddingBottom: '100%', overflow: 'hidden', flexShrink: 0 }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
+                    {product.imageUrl ? (
+                        <img
+                            src={product.imageUrl}
+                            alt={product.name}
+                            style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                                transition: 'transform 0.5s ease',
+                                transform: hovered ? 'scale(1.05)' : 'scale(1)'
+                            }}
+                        />
+                    ) : (
+                        <div style={{
+                            width: '100%',
+                            height: '100%',
+                            backgroundColor: '#e0e0e0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'var(--color-text-secondary)',
+                            fontSize: '0.875rem'
+                        }}>
+                            No Image
+                        </div>
+                    )}
+                </div>
                 {product.stock <= 3 && product.stock > 0 && (
                     <div style={{
                         position: 'absolute',
@@ -72,10 +89,9 @@ export default function ProductCard({ product }) {
                 )}
             </div>
 
-            <div style={{ padding: 'var(--space-md)', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginBottom: 'var(--space-md)' }}>
-                    <h3 style={{
-                        fontSize: '1.125rem',
+            <div className="product-card-body" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginBottom: 'var(--space-xs)' }}>
+                    <h3 className="product-card-title" style={{
                         fontWeight: 500,
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
@@ -85,7 +101,21 @@ export default function ProductCard({ product }) {
                     }}>
                         {product.name}
                     </h3>
-                    <span style={{ fontWeight: 600, color: 'var(--color-accent)', whiteSpace: 'nowrap' }}>{product.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <strong>৳</strong></span>
+                    <div className="product-card-price-row" style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: (product.previousPrice && Number(product.previousPrice) > 0 && Number(product.previousPrice) > Number(product.price)) ? 'space-between' : 'flex-start',
+                        width: '100%',
+                        flexWrap: 'nowrap',
+                        gap: '4px'
+                    }}>
+                        {product.previousPrice && Number(product.previousPrice) > 0 && Number(product.previousPrice) > Number(product.price) ? (
+                            <span className="product-old-price" style={{ textDecoration: 'line-through', color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
+                                {Number(product.previousPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <strong>৳</strong>
+                            </span>
+                        ) : null}
+                        <span className="product-new-price" style={{ fontWeight: 600, color: 'var(--color-accent)', whiteSpace: 'nowrap', fontSize: '1rem' }}>{Number(product.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <strong>৳</strong></span>
+                    </div>
                 </div>
                 <button
                     style={{

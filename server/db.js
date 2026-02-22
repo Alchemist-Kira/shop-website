@@ -12,7 +12,8 @@ db.exec(`
     imageUrl TEXT,
     stock INTEGER DEFAULT 0,
     sizes TEXT DEFAULT '["S","M","L"]',
-    colors TEXT DEFAULT '["Black","White"]'
+    colors TEXT DEFAULT '["Black","White"]',
+    tags TEXT DEFAULT '[]'
   );
 
   CREATE TABLE IF NOT EXISTS orders (
@@ -65,6 +66,14 @@ try {
   db.exec(`ALTER TABLE products ADD COLUMN category TEXT DEFAULT 'Uncategorized'`);
 } catch (e) { /* Column already exists */ }
 
+try {
+  db.exec(`ALTER TABLE products ADD COLUMN previousPrice REAL`);
+} catch (e) { /* Column already exists */ }
+
+try {
+  db.exec(`ALTER TABLE products ADD COLUMN tags TEXT DEFAULT '[]'`);
+} catch (e) { /* Column already exists */ }
+
 // New Order Fields
 try { db.exec(`ALTER TABLE orders ADD COLUMN customerPhone TEXT`); } catch (e) { }
 try { db.exec(`ALTER TABLE orders ADD COLUMN shippingArea TEXT`); } catch (e) { }
@@ -81,6 +90,19 @@ try {
 
   if (!checkSetting.get('delivery_inside')) insertSetting.run('delivery_inside', '60');
   if (!checkSetting.get('delivery_outside')) insertSetting.run('delivery_outside', '120');
+
+  if (!checkSetting.get('store_categories')) {
+    insertSetting.run('store_categories', JSON.stringify([]));
+  } else {
+    // If exact default string is still present, wipe it to oblige user request to remove previous defaults
+    const currentCats = checkSetting.get('store_categories').value;
+    if (currentCats === '[{"name":"Panjabi","serial":1},{"name":"Pajama","serial":2},{"name":"Koti","serial":3}]') {
+      db.prepare("UPDATE settings SET value='[]' WHERE key='store_categories'").run();
+    }
+  }
+  if (!checkSetting.get('notification_sound_enabled')) {
+    insertSetting.run('notification_sound_enabled', 'true');
+  }
 } catch (e) {
   console.error("Failed to seed default settings:", e);
 }

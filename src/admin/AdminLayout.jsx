@@ -47,6 +47,7 @@ export default function AdminLayout({ onLogout }) {
                     <Link to="/admin" style={navStyle('/admin')} onClick={closeSidebar}>Dashboard / Orders</Link>
                     <Link to="/admin/products" style={navStyle('/admin/products')} onClick={closeSidebar}>Inventory Management</Link>
                     <Link to="/admin/banners" style={navStyle('/admin/banners')} onClick={closeSidebar}>Manage Banners</Link>
+                    <Link to="/admin/settings" style={navStyle('/admin/settings')} onClick={closeSidebar}>Store Settings</Link>
                 </nav>
 
                 <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 'var(--space-md)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>

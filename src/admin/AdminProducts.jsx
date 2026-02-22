@@ -10,7 +10,7 @@ export default function AdminProducts() {
     const [modalMode, setModalMode] = useState(null);
     const [editingId, setEditingId] = useState(null);
     const [formData, setFormData] = useState({
-        name: '', description: '', price: 0, stock: 0, sizes: 'S, M, L', colors: 'Black, White', category: ''
+        name: '', description: '', price: 0, previousPrice: 0, stock: 0, sizes: 'M-40, L-42, XL-44', colors: '', tags: '', category: ''
     });
     const [imageFiles, setImageFiles] = useState([]);
     const [previewUrls, setPreviewUrls] = useState([]);
@@ -21,15 +21,8 @@ export default function AdminProducts() {
         setPreviewUrls(urls);
         return () => urls.forEach(url => URL.revokeObjectURL(url));
     }, [imageFiles]);
-    const [settings, setSettings] = useState({ delivery_inside: '60', delivery_outside: '120' });
-    const [savingSettings, setSavingSettings] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-
-    // Derived state for dynamic category suggestions
-    const existingCategories = useMemo(() => {
-        const categories = products.map(p => p.category).filter(Boolean);
-        return [...new Set(categories)]; // Returns only unique categories
-    }, [products]);
+    const [availableCategories, setAvailableCategories] = useState([]);
 
     const fetchProducts = () => {
         const token = localStorage.getItem('admin_token');
@@ -54,8 +47,12 @@ export default function AdminProducts() {
         fetch('/api/settings')
             .then(res => res.json())
             .then(data => {
-                if (data.delivery_inside || data.delivery_outside) {
-                    setSettings(prev => ({ ...prev, ...data }));
+                if (data.store_categories) {
+                    try {
+                        let parsed = JSON.parse(data.store_categories);
+                        parsed.sort((a, b) => a.serial - b.serial);
+                        setAvailableCategories(parsed.map(c => c.name));
+                    } catch (e) { }
                 }
             })
             .catch(err => console.error("Failed to fetch settings:", err));
@@ -67,7 +64,7 @@ export default function AdminProducts() {
     }, []);
 
     const openAddModal = () => {
-        setFormData({ name: '', description: '', price: 0, stock: 0, sizes: 'S, M, L', colors: 'Black, White', category: '' });
+        setFormData({ name: '', description: '', price: 0, previousPrice: 0, stock: 0, sizes: 'M-40, L-42, XL-44', colors: '', tags: '', category: '' });
         setImageFiles([]);
         setExistingImages([]);
         setEditingId(null);
@@ -109,17 +106,20 @@ export default function AdminProducts() {
         }
 
         try {
-            const token = localStorage.getItem('admin_token');
+            const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
             const sizesArr = formData.sizes.split(',').map(s => s.trim()).filter(Boolean);
-            const colorsArr = formData.colors.split(',').map(c => c.trim()).filter(Boolean);
+            const colorsArr = formData.colors.split(',').map(c => c.trim()).filter(c => c);
+            const tagsArr = formData.tags.split(',').map(t => t.trim()).filter(t => t);
 
             const submitData = new FormData();
             submitData.append('name', formData.name);
             submitData.append('description', formData.description);
             submitData.append('price', formData.price);
+            submitData.append('previousPrice', formData.previousPrice || 0);
             submitData.append('stock', formData.stock);
             submitData.append('sizes', JSON.stringify(sizesArr));
             submitData.append('colors', JSON.stringify(colorsArr));
+            submitData.append('tags', JSON.stringify(tagsArr));
             submitData.append('category', formData.category);
 
             // Append all new files to the "images" field array
@@ -167,7 +167,7 @@ export default function AdminProducts() {
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to delete this product? Action cannot be undone.')) return;
         try {
-            const token = localStorage.getItem('admin_token');
+            const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
             const response = await fetch(`/api/products/${id}`, {
                 method: 'DELETE',
                 headers: {
@@ -194,31 +194,6 @@ export default function AdminProducts() {
         setImageFiles(prev => prev.filter((_, i) => i !== index));
     };
 
-    const handleSaveSettings = async () => {
-        setSavingSettings(true);
-        try {
-            const token = localStorage.getItem('admin_token');
-            const res = await fetch('/api/settings', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(settings)
-            });
-            if (res.ok) {
-                addToast('Store settings updated!', 'success');
-            } else {
-                addToast('Failed to update settings', 'error');
-            }
-        } catch (err) {
-            console.error(err);
-            addToast('Error saving settings', 'error');
-        } finally {
-            setSavingSettings(false);
-        }
-    };
-
     return (
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-xl)', flexWrap: 'wrap', gap: '1rem' }}>
@@ -237,45 +212,6 @@ export default function AdminProducts() {
                         style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
                     >
                         + Add Product
-                    </button>
-                </div>
-            </div>
-
-            {/* Global Store Settings */}
-            <div style={{ backgroundColor: 'white', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', padding: 'var(--space-lg)', marginBottom: 'var(--space-xl)' }}>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: 'var(--space-md)', borderBottom: '1px solid var(--color-border)', paddingBottom: 'var(--space-sm)' }}>Store Settings</h2>
-                <div style={{ display: 'flex', gap: 'var(--space-xl)', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                    <div>
-                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>Delivery Charge (Inside Dhaka)</label>
-                        <div style={{ position: 'relative' }}>
-                            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontWeight: 600 }}>৳</span>
-                            <input
-                                type="number"
-                                value={settings.delivery_inside}
-                                onChange={e => setSettings(prev => ({ ...prev, delivery_inside: e.target.value }))}
-                                style={{ padding: '10px 10px 10px 32px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', width: '150px' }}
-                            />
-                        </div>
-                    </div>
-                    <div>
-                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>Delivery Charge (Outside Dhaka)</label>
-                        <div style={{ position: 'relative' }}>
-                            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontWeight: 600 }}>৳</span>
-                            <input
-                                type="number"
-                                value={settings.delivery_outside}
-                                onChange={e => setSettings(prev => ({ ...prev, delivery_outside: e.target.value }))}
-                                style={{ padding: '10px 10px 10px 32px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', width: '150px' }}
-                            />
-                        </div>
-                    </div>
-                    <button
-                        className="btn btn-secondary"
-                        onClick={handleSaveSettings}
-                        disabled={savingSettings}
-                        style={{ padding: '10px 24px' }}
-                    >
-                        {savingSettings ? 'Saving...' : 'Save Settings'}
                     </button>
                 </div>
             </div>
@@ -301,8 +237,8 @@ export default function AdminProducts() {
                                 (p.category && p.category.toLowerCase().includes(searchQuery.toLowerCase())) ||
                                 (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
                             ).map(product => {
-                                const sizesText = typeof product.sizes === 'string' ? JSON.parse(product.sizes).join(', ') : '';
-                                const colorsText = typeof product.colors === 'string' ? JSON.parse(product.colors).join(', ') : '';
+                                const sizesText = typeof product.sizes === 'string' ? JSON.parse(product.sizes).join(', ') : (Array.isArray(product.sizes) ? product.sizes.join(', ') : '');
+                                const colorsText = typeof product.colors === 'string' ? JSON.parse(product.colors).join(', ') : (Array.isArray(product.colors) ? product.colors.join(', ') : '');
 
                                 return (
                                     <tr key={product.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
@@ -345,7 +281,7 @@ export default function AdminProducts() {
             {/* Unified Add/Edit Product Modal - 2 Column Layout */}
             {modalMode && (
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 'var(--space-lg)' }}>
-                    <div style={{ backgroundColor: 'white', borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: '1100px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-xl)', overflow: 'hidden' }}>
+                    <div style={{ backgroundColor: 'white', borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: '1400px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-xl)', overflow: 'hidden' }}>
 
                         {/* Modal Header */}
                         <div style={{ padding: 'var(--space-lg) var(--space-xl)', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -368,7 +304,7 @@ export default function AdminProducts() {
                                     <label style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>CATEGORY</label>
                                     <input type="text" list="category-options" placeholder="e.g. Eid Special" value={formData.category || ''} onChange={e => setFormData({ ...formData, category: e.target.value })} style={{ padding: '12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '1rem' }} />
                                     <datalist id="category-options">
-                                        {existingCategories.map((cat, idx) => (
+                                        {availableCategories.map((cat, idx) => (
                                             <option key={idx} value={cat}>{cat}</option>
                                         ))}
                                     </datalist>
@@ -379,28 +315,38 @@ export default function AdminProducts() {
                                     <textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} style={{ padding: '12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '1rem', resize: 'vertical' }} rows={5} />
                                 </div>
 
-                                <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
+                                <div style={{ display: 'flex', gap: 'var(--space-md)', flexWrap: 'wrap' }}>
                                     <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                                        <label style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>PRICE (<strong>৳</strong>)</label>
-                                        <input type="number" step="0.01" value={formData.price} onChange={e => setFormData({ ...formData, price: parseFloat(e.target.value) })} style={{ padding: '12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '1rem' }} />
+                                        <label style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>PREV PRICE (<strong>৳</strong>)</label>
+                                        <input type="number" step="0.01" value={formData.previousPrice} onChange={e => setFormData({ ...formData, previousPrice: parseFloat(e.target.value) || 0 })} onFocus={e => e.target.select()} style={{ padding: '12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '1rem' }} />
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                                        <label style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>STOCK QUANTITY</label>
-                                        <input type="number" value={formData.stock} onChange={e => setFormData({ ...formData, stock: parseInt(e.target.value) })} style={{ padding: '12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '1rem' }} />
+                                        <label style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>PRICE (<strong>৳</strong>)</label>
+                                        <input type="number" step="0.01" value={formData.price} onChange={e => setFormData({ ...formData, price: parseFloat(e.target.value) })} onFocus={e => e.target.select()} style={{ padding: '12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '1rem' }} />
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                                        <label style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>STOCK</label>
+                                        <input type="number" value={formData.stock} onChange={e => setFormData({ ...formData, stock: parseInt(e.target.value) })} onFocus={e => e.target.select()} style={{ padding: '12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '1rem' }} />
                                     </div>
                                 </div>
                             </div>
 
                             {/* Right Column: Variants and Media */}
                             <div className="admin-modal-col-right">
-                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                    <label style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>SIZES (COMMA-SEPARATED)</label>
-                                    <input type="text" placeholder="e.g. S, M, L, XL" value={formData.sizes} onChange={e => setFormData({ ...formData, sizes: e.target.value })} style={{ padding: '12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '1rem' }} />
+                                <div style={{ display: 'flex', gap: 'var(--space-md)', flexWrap: 'wrap' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                                        <label style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>AVAILABLE SIZES (COMMA SEPARATED)</label>
+                                        <input type="text" placeholder="e.g. S, M, L, XL" value={formData.sizes} onChange={e => setFormData({ ...formData, sizes: e.target.value })} style={{ padding: '12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '1rem' }} />
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                                        <label style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>AVAILABLE COLORS (COMMA SEPARATED)</label>
+                                        <input type="text" placeholder="e.g. Red, Blue, Green" value={formData.colors} onChange={e => setFormData({ ...formData, colors: e.target.value })} style={{ padding: '12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '1rem' }} />
+                                    </div>
                                 </div>
-
                                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                    <label style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>COLORS (COMMA-SEPARATED)</label>
-                                    <input type="text" placeholder="e.g. Red, Blue, Green" value={formData.colors} onChange={e => setFormData({ ...formData, colors: e.target.value })} style={{ padding: '12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '1rem' }} />
+                                    <label style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-secondary)' }}>SEARCH TAGS (Internal: "summer, formal, blue")</label>
+                                    <input type="text" value={formData.tags} onChange={e => setFormData({ ...formData, tags: e.target.value })} style={{ padding: '12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '1rem' }} />
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>These tags remain hidden but help customers find this product.</span>
                                 </div>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', marginTop: 'var(--space-md)' }}>
@@ -452,7 +398,7 @@ export default function AdminProducts() {
                         <div style={{ padding: 'var(--space-lg) var(--space-xl)', borderTop: '1px solid var(--color-border)', display: 'flex', gap: 'var(--space-md)', justifyContent: 'flex-end', backgroundColor: '#faf9f6' }}>
                             <button onClick={closeModal} style={{ padding: '10px 24px', border: '1px solid var(--color-border)', backgroundColor: 'white', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontWeight: 600, fontSize: '1rem' }}>Cancel</button>
                             <button onClick={handleSave} className="btn btn-primary" style={{ padding: '10px 32px', fontSize: '1rem' }}>
-                                {modalMode === 'add' ? 'Save New Product' : 'Update Product'}
+                                {modalMode === 'add' ? 'Save' : 'Update Product'}
                             </button>
                         </div>
                     </div>

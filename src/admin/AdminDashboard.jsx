@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useToast } from '../components/ToastProvider';
+import notificationSoundFile from '../assets/notification-sound.mp3';
 
 export default function AdminDashboard() {
     const { addToast } = useToast();
@@ -8,10 +9,11 @@ export default function AdminDashboard() {
     const [filterStatus, setFilterStatus] = useState('all');
     const [sortBy, setSortBy] = useState('newest');
     const [searchQuery, setSearchQuery] = useState('');
+    const audioRef = useRef(null);
 
     const handleUpdateStatus = async (orderId, newStatus) => {
         try {
-            const token = localStorage.getItem('admin_token');
+            const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
             const res = await fetch(`/api/orders/${orderId}/status`, {
                 method: 'PUT',
                 headers: {
@@ -66,7 +68,7 @@ export default function AdminDashboard() {
         if (!window.confirm("Are you sure you want to delete this order? This cannot be undone.")) return;
 
         try {
-            const token = localStorage.getItem('admin_token');
+            const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
             const res = await fetch(`/api/orders/${orderId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -87,7 +89,7 @@ export default function AdminDashboard() {
         if (!window.confirm("Are you sure you want to permanently delete ALL completed and cancelled orders? Pending orders will be kept.")) return;
 
         try {
-            const token = localStorage.getItem('admin_token');
+            const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
             const res = await fetch(`/api/orders`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -104,7 +106,7 @@ export default function AdminDashboard() {
     };
 
     const fetchOrders = () => {
-        const token = localStorage.getItem('admin_token');
+        const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
         fetch('/api/orders', {
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -127,9 +129,24 @@ export default function AdminDashboard() {
     useEffect(() => {
         fetchOrders();
 
+        const soundEnabledRef = { current: true };
+        fetch('/api/settings')
+            .then(res => res.json())
+            .then(data => {
+                if (data.notification_sound_enabled === 'false') {
+                    soundEnabledRef.current = false;
+                }
+            })
+            .catch(err => console.error("Failed to fetch sound settings:", err));
+
         // Setup Server-Sent Events (SSE) for real-time notifications
-        const token = localStorage.getItem('admin_token');
+        const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
         if (!token) return;
+
+        // Request notification permission if not asked yet
+        if ("Notification" in window && Notification.permission === "default") {
+            Notification.requestPermission();
+        }
 
         const eventSource = new EventSource(`/api/orders/stream?token=${token}`);
 
@@ -141,6 +158,33 @@ export default function AdminDashboard() {
                 // When a new order arrives, prepend it to the list and show a notification
                 setOrders(prev => [data, ...prev]);
                 addToast(`New order received from ${data.customerName}!`, 'success');
+
+                // Play notification sound
+                if (soundEnabledRef.current && audioRef.current) {
+                    audioRef.current.currentTime = 0; // reset to beginning
+                    audioRef.current.play().catch(e => console.error("Error playing sound. Browsers often block autoplaying audio if the user hasn't interacted with the page first:", e));
+                }
+
+                // Show OS notification if permitted (helps if tab is in background)
+                if ("Notification" in window && Notification.permission === "granted") {
+                    const title = "New Order!";
+                    const options = {
+                        body: `Received an order from ${data.customerName}`,
+                        icon: '/src/assets/icon.png',
+                        requireInteraction: true // keep it on screen until they click
+                    };
+
+                    // Try using ServiceWorker to push the notification (required for consistent background delivery on many OS)
+                    navigator.serviceWorker?.getRegistration().then(reg => {
+                        if (reg) {
+                            reg.showNotification(title, options);
+                        } else {
+                            new Notification(title, options);
+                        }
+                    }).catch(() => {
+                        new Notification(title, options); // absolute fallback
+                    });
+                }
             } catch (err) {
                 console.error("SSE parse error", err);
             }
@@ -182,11 +226,14 @@ export default function AdminDashboard() {
             <html>
             <head>
                 <title>Receipt - Order #${order.id.toString().padStart(4, '0')}</title>
+                <link rel="preconnect" href="https://fonts.googleapis.com">
+                <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
                 <style>
                     body { font-family: 'Inter', sans-serif; color: #111; line-height: 1.5; padding: 40px; }
                     .header { text-align: center; margin-bottom: 40px; }
-                    .header h1 { margin: 0; font-size: 28px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; }
-                    .header p { margin: 4px 0 0; color: #666; }
+                    .header h1 { margin: 0; font-size: 32px; font-weight: 700; letter-spacing: 0.05em; font-family: 'Playfair Display', serif; color: #1a1a1a; }
+                    .header p { margin: 4px 0 0; color: #666; text-transform: uppercase; font-size: 14px; letter-spacing: 2px; }
                     .info-grid { display: flex; justify-content: space-between; margin-bottom: 40px; }
                     .info-block { flex: 1; }
                     .info-block h3 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; color: #666; letter-spacing: 1px; }
@@ -203,8 +250,8 @@ export default function AdminDashboard() {
             </head>
             <body>
                 <div class="header">
-                    <h1>M&M Dress</h1>
-                    <p>Official Purchase Receipt</p>
+                    <h1>Marbilo</h1>
+                    <p>Luxury Panjabi</p>
                 </div>
 
                 <div class="info-grid">
@@ -219,7 +266,7 @@ export default function AdminDashboard() {
                         <h3>Order Details</h3>
                         <p><strong>Order ID:</strong> #${order.id.toString().padStart(4, '0')}<br>
                         <strong>Date:</strong> ${new Date(order.createdAt).toLocaleDateString()}<br>
-                        <strong>Status:</strong> ${order.status.toUpperCase()}</p>
+                        <strong>Payment:</strong> Cash on Delivery (COD)</p>
                     </div>
                 </div>
 
@@ -249,14 +296,13 @@ export default function AdminDashboard() {
                 '</div>'
             ) : ''}
                     <div class="totals-row bold">
-                        <span>Total Paid</span>
+                        <span>Total (COD)</span>
                         <span>${order.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <strong>৳</strong></span>
                     </div>
                 </div>
 
                 <div class="footer">
-                    Thank you for shopping with M&M Dress!<br>
-                    Please retain this receipt for your records.
+                    Thank you for shopping with Marbilo!<br>
                 </div>
             </body>
             </html>
@@ -274,6 +320,9 @@ export default function AdminDashboard() {
 
     return (
         <div>
+            {/* Hidden audio element for notifications */}
+            <audio ref={audioRef} src={notificationSoundFile} preload="auto" />
+
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-xl)', flexWrap: 'wrap', gap: '1rem' }}>
                 <h1 style={{ fontSize: '2rem', fontWeight: 600 }}>Order Management</h1>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -336,14 +385,14 @@ export default function AdminDashboard() {
                             boxShadow: 'var(--shadow-sm)',
                             padding: 'var(--space-lg)'
                         }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 'var(--space-md)', marginBottom: 'var(--space-md)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 'var(--space-md)', marginBottom: 'var(--space-md)', flexWrap: 'wrap', gap: '1rem' }}>
                                 <div>
                                     <h3 style={{ fontSize: '1.25rem', marginBottom: '4px' }}>Order #{order.id.toString().padStart(4, '0')}</h3>
                                     <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
-                                        Placed on: {new Date(order.createdAt).toLocaleDateString()} at {new Date(order.createdAt).toLocaleTimeString()}
+                                        Placed on: {new Date(order.createdAt + 'Z').toLocaleDateString()} at {new Date(order.createdAt + 'Z').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </div>
                                 </div>
-                                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+                                <div style={{ marginLeft: 'auto', textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
                                     <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-accent)' }}>{order.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <strong>৳</strong></div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <span style={{
@@ -412,7 +461,18 @@ export default function AdminDashboard() {
                                                     <img src={item.imageUrl} alt={item.name} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px' }} />
                                                 )}
                                                 <div style={{ flex: 1 }}>
-                                                    <div style={{ fontWeight: 500 }}>{item.name}</div>
+                                                    <div style={{ fontWeight: 500 }}>
+                                                        <a
+                                                            href={`/product/${item.productId}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            style={{ color: 'var(--color-text-primary)', textDecoration: 'none', borderBottom: '1px solid transparent' }}
+                                                            onMouseEnter={e => e.currentTarget.style.borderBottom = '1px solid var(--color-accent)'}
+                                                            onMouseLeave={e => e.currentTarget.style.borderBottom = '1px solid transparent'}
+                                                        >
+                                                            {item.name}
+                                                        </a>
+                                                    </div>
 
                                                     {/* Variant Details */}
                                                     {(item.selectedSize || item.selectedColor) && (

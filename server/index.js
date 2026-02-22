@@ -90,55 +90,114 @@ app.get('/api/products/:id', (req, res) => {
     }
 });
 
-// Add a product (Admin)
+// Add Product (with multiple images support and tags)
 app.post('/api/products', authenticateToken, upload.array('images'), (req, res) => {
-    const { name, description, price, stock, sizes, colors, category } = req.body;
+    const { name, description, price, previousPrice, stock, sizes, colors, tags, category } = req.body;
+    let imagesArr = [];
+    if (req.files && req.files.length > 0) {
+        imagesArr = req.files.map(file => `/uploads/${file.filename}`);
+    }
 
-    // Process new uploaded images
-    const uploadedUrls = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
+    const imageUrl = imagesArr.length > 0 ? imagesArr[0] : null;
+    const imagesJson = JSON.stringify(imagesArr);
 
-    // We still maintain imageUrl for backwards compatibility, using the first image if available
-    let imageUrl = req.body.imageUrl || (uploadedUrls.length > 0 ? uploadedUrls[0] : '');
-    const imagesJson = JSON.stringify(uploadedUrls);
+    let productSizes = '[]';
+    // If sizes is a stringified JSON array, use it directly. Otherwise construct a default.
+    if (sizes) {
+        try {
+            // Check if it's already a valid JSON string
+            JSON.parse(sizes);
+            productSizes = sizes;
+        } catch (e) {
+            productSizes = JSON.stringify(["M-40", "L-42", "XL-44"]);
+        }
+    } else {
+        productSizes = JSON.stringify(["M-40", "L-42", "XL-44"]);
+    }
 
-    // Default values if sizes/colors aren't provided
-    const productSizes = sizes || '["S","M","L"]';
-    const productColors = colors || '["Black","White"]';
-    const productCategory = category || 'Uncategorized';
+    let productColors = colors || '["Black","White"]';
+    let productCategory = category || 'Uncategorized';
+    let productTags = tags || '[]';
+
+    // Auto-add new category to settings if it doesn't exist
+    try {
+        if (productCategory && productCategory !== 'Uncategorized') {
+            const catSetting = db.prepare('SELECT value FROM settings WHERE key = ?').get('store_categories');
+            if (catSetting) {
+                let categories = [];
+                try { categories = JSON.parse(catSetting.value); } catch (e) { }
+                const exists = categories.some(c => c.name.toLowerCase() === productCategory.toLowerCase());
+                if (!exists) {
+                    const nextSerial = categories.length > 0 ? Math.max(...categories.map(c => c.serial)) + 1 : 1;
+                    categories.push({ name: productCategory, serial: nextSerial });
+                    db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run('store_categories', JSON.stringify(categories));
+                }
+            }
+        }
+    } catch (err) { console.error("Error auto-adding category:", err); }
 
     try {
-        const stmt = db.prepare('INSERT INTO products (name, description, price, imageUrl, stock, sizes, colors, images, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-        const info = stmt.run(name, description, price, imageUrl, stock, productSizes, productColors, imagesJson, productCategory);
-        res.json({ success: true, id: info.lastInsertRowid, imageUrl, images: uploadedUrls, category: productCategory });
+        const stmt = db.prepare('INSERT INTO products (name, description, price, previousPrice, imageUrl, stock, sizes, colors, tags, images, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        const info = stmt.run(name, description, price, previousPrice || null, imageUrl, stock, productSizes, productColors, productTags, imagesJson, productCategory);
+        res.json({ id: info.lastInsertRowid });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to add product' });
+        res.status(500).json({ error: err.message });
     }
 });
 
-// Update a product (Admin)
+// Update Product (with multiple images replacement support and tags)
 app.put('/api/products/:id', authenticateToken, upload.array('images'), (req, res) => {
     const { id } = req.params;
-    const { name, description, price, stock, sizes, colors, category } = req.body;
+    const { name, description, price, previousPrice, stock, sizes, colors, tags, category, existingImages } = req.body;
 
-    // existingImages comes as a JSON string from FormData
-    const existingImages = req.body.existingImages ? JSON.parse(req.body.existingImages) : [];
-    const uploadedUrls = req.files ? req.files.map(file => `http://localhost:${port}/uploads/${file.filename}`) : [];
+    // existingImages might come as a string or array depending on FormData
+    // existingImages field is meant to retain currently uploaded image paths if untouched
+    let keepImages = [];
+    if (existingImages) {
+        try {
+            keepImages = JSON.parse(existingImages);
+        } catch (e) {
+            keepImages = Array.isArray(existingImages) ? existingImages : [existingImages];
+        }
+    }
 
-    const finalImages = [...existingImages, ...uploadedUrls];
+    let newImagesArr = [];
+    if (req.files && req.files.length > 0) {
+        newImagesArr = req.files.map(file => `/uploads/${file.filename}`);
+    }
 
-    // We still maintain imageUrl for backwards compatibility, using the first image if available
-    let imageUrl = req.body.imageUrl || (finalImages.length > 0 ? finalImages[0] : '');
-    const imagesJson = JSON.stringify(finalImages);
-    const productCategory = category || 'Uncategorized';
+    // Combine kept images and new images
+    const finalImagesArr = [...keepImages, ...newImagesArr];
+    const imageUrl = finalImagesArr.length > 0 ? finalImagesArr[0] : null;
+    const imagesJson = JSON.stringify(finalImagesArr);
+
+    let productCategory = category || 'Uncategorized';
+    let productTags = tags || '[]';
+
+    // Auto-add new category to settings if it doesn't exist
+    try {
+        if (productCategory && productCategory !== 'Uncategorized') {
+            const catSetting = db.prepare('SELECT value FROM settings WHERE key = ?').get('store_categories');
+            if (catSetting) {
+                let categories = [];
+                try { categories = JSON.parse(catSetting.value); } catch (e) { }
+                const exists = categories.some(c => c.name.toLowerCase() === productCategory.toLowerCase());
+                if (!exists) {
+                    const nextSerial = categories.length > 0 ? Math.max(...categories.map(c => c.serial)) + 1 : 1;
+                    categories.push({ name: productCategory, serial: nextSerial });
+                    db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run('store_categories', JSON.stringify(categories));
+                }
+            }
+        }
+    } catch (err) { console.error("Error auto-adding category:", err); }
 
     try {
-        const stmt = db.prepare('UPDATE products SET name = ?, description = ?, price = ?, imageUrl = ?, stock = ?, sizes = ?, colors = ?, images = ?, category = ? WHERE id = ?');
-        stmt.run(name, description, price, imageUrl, stock, sizes, colors, imagesJson, productCategory, id);
-        res.json({ success: true, images: finalImages, category: productCategory });
+        const stmt = db.prepare('UPDATE products SET name = ?, description = ?, price = ?, previousPrice = ?, imageUrl = ?, stock = ?, sizes = ?, colors = ?, tags = ?, images = ?, category = ? WHERE id = ?');
+        stmt.run(name, description, price, previousPrice || null, imageUrl, stock, sizes, colors, productTags, imagesJson, productCategory, id);
+        res.json({ success: true });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to update product' });
+        console.error("Update error:", err);
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -230,7 +289,7 @@ app.post('/api/orders', (req, res) => {
 
         // Run in a transaction
         const placeOrder = db.transaction(() => {
-            const info = insertOrder.run(customerName, customerEmail, customerPhone || null, shippingArea || null, customerAddress, orderNote || null, totalAmount);
+            const info = insertOrder.run(customerName, customerEmail || '', customerPhone || null, shippingArea || null, customerAddress, orderNote || null, totalAmount);
             const orderId = info.lastInsertRowid;
 
             for (const item of items) {

@@ -49,7 +49,7 @@ export default function AdminBanners() {
         }
 
         setIsSaving(true);
-        const token = localStorage.getItem('admin_token');
+        const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
         let successCount = 0;
         let failCount = 0;
 
@@ -94,7 +94,7 @@ export default function AdminBanners() {
     const handleDeleteBanner = async (id) => {
         if (!window.confirm("Are you sure you want to delete this banner? The image file will be permanently removed from the server.")) return;
 
-        const token = localStorage.getItem('admin_token');
+        const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
         try {
             const response = await fetch(`/api/banners/${id}`, {
                 method: 'DELETE',

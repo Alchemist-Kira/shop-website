@@ -120,9 +120,17 @@ export default function ProductPage() {
     }
 
     const handleMouseMove = (e) => {
+        let clientX = e.clientX;
+        let clientY = e.clientY;
+
+        if (e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        }
+
         const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
-        const x = ((e.clientX - left) / width) * 100;
-        const y = ((e.clientY - top) / height) * 100;
+        const x = ((clientX - left) / width) * 100;
+        const y = ((clientY - top) / height) * 100;
         setZoomProps({ show: true, x, y });
     };
 
@@ -148,9 +156,12 @@ export default function ProductPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     {/* Main Active Image with proper aspect ratio container to prevent overlap/overflow */}
                     <div
-                        style={{ position: 'relative', width: '100%', aspectRatio: '3/4', backgroundColor: '#f5f5f5', borderRadius: 'var(--radius-md)', overflow: 'hidden', cursor: 'crosshair' }}
+                        style={{ position: 'relative', width: '100%', aspectRatio: '3/4', backgroundColor: '#f5f5f5', borderRadius: 'var(--radius-md)', overflow: 'hidden', cursor: 'crosshair', touchAction: 'none' }}
                         onMouseMove={handleMouseMove}
+                        onTouchMove={handleMouseMove}
+                        onTouchStart={handleMouseMove}
                         onMouseLeave={() => setZoomProps({ show: false, x: 0, y: 0 })}
+                        onTouchEnd={() => setZoomProps({ show: false, x: 0, y: 0 })}
                     >
                         <img
                             src={activeImage}
@@ -170,6 +181,8 @@ export default function ProductPage() {
                             <>
                                 <button
                                     onClick={handlePrevImage}
+                                    onMouseMove={(e) => { e.stopPropagation(); setZoomProps({ show: false, x: 0, y: 0 }); }}
+                                    onTouchMove={(e) => { e.stopPropagation(); setZoomProps({ show: false, x: 0, y: 0 }); }}
                                     style={{
                                         position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)',
                                         width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.8)',
@@ -177,10 +190,12 @@ export default function ProductPage() {
                                         display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', color: '#333'
                                     }}
                                 >
-                                    &#8592;
+                                    &lt;
                                 </button>
                                 <button
                                     onClick={handleNextImage}
+                                    onMouseMove={(e) => { e.stopPropagation(); setZoomProps({ show: false, x: 0, y: 0 }); }}
+                                    onTouchMove={(e) => { e.stopPropagation(); setZoomProps({ show: false, x: 0, y: 0 }); }}
                                     style={{
                                         position: 'absolute', top: '50%', right: '1rem', transform: 'translateY(-50%)',
                                         width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.8)',
@@ -188,7 +203,7 @@ export default function ProductPage() {
                                         display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', color: '#333'
                                     }}
                                 >
-                                    &#8594;
+                                    &gt;
                                 </button>
                             </>
                         )}
@@ -223,9 +238,16 @@ export default function ProductPage() {
                 {/* Right Side: Product Details */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xl)' }}>
                     <div>
-                        <h1 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: 'var(--space-xs)', lineHeight: 1.1 }}>{product.name}</h1>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--color-accent)' }}>
-                            {Number(product.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <strong>৳</strong>
+                        <h1 style={{ fontSize: 'var(--font-size-xxl)', fontWeight: 700, marginBottom: 'var(--space-xs)', lineHeight: 1.1 }}>{product.name}</h1>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                            {product.previousPrice && Number(product.previousPrice) > 0 && Number(product.previousPrice) > Number(product.price) ? (
+                                <div style={{ fontSize: 'var(--font-size-lg)', textDecoration: 'line-through', color: 'var(--color-text-secondary)' }}>
+                                    {Number(product.previousPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <strong>৳</strong>
+                                </div>
+                            ) : null}
+                            <div style={{ fontSize: 'var(--font-size-xl)', fontWeight: 600, color: 'var(--color-accent)' }}>
+                                {Number(product.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <strong>৳</strong>
+                            </div>
                         </div>
                     </div>
 
