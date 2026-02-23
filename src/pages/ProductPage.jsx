@@ -199,7 +199,6 @@ export default function ProductPage() {
                             padding: '4px 10px',
                             borderRadius: '20px',
                             fontSize: '0.75rem',
-                            display: 'flex',
                             alignItems: 'center',
                             gap: '4px',
                             pointerEvents: 'none'
@@ -413,8 +412,8 @@ export default function ProductPage() {
                         gap: 1.5rem !important;
                     }
                     .product-main-image-wrapper {
-                        aspect-ratio: 1 / 1 !important;
-                        max-height: 400px;
+                        aspect-ratio: 3 / 4 !important;
+                        max-height: 500px;
                         margin: 0 auto;
                     }
                     .product-thumbnail-container {
@@ -438,25 +437,24 @@ export default function ProductPage() {
                         position: 'fixed',
                         top: 0,
                         left: 0,
-                        width: '100%',
-                        height: '100%',
+                        width: '100vw',
+                        height: '100vh',
                         backgroundColor: 'black',
                         zIndex: 2000,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        padding: '1rem',
-                        overflow: 'hidden'
+                        overflow: 'hidden' // Prevent scrolling the modal background
                     }}
                     onClick={() => setShowLightbox(false)}
                 >
                     <button
                         onClick={(e) => { e.stopPropagation(); setShowLightbox(false); }}
                         style={{
-                            position: 'absolute',
-                            top: '2rem',
-                            right: '2rem',
-                            backgroundColor: 'white',
+                            position: 'fixed', // Keep fixed to screen regardless of zoom
+                            top: '20px',
+                            right: '20px',
+                            backgroundColor: 'rgba(255, 255, 255, 0.8)',
                             color: 'black',
                             border: 'none',
                             borderRadius: '50%',
@@ -482,7 +480,8 @@ export default function ProductPage() {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            overflow: 'auto' // Allow panning if image is larger
+                            overflow: 'auto', // Allow panning if image is larger
+                            WebkitOverflowScrolling: 'touch' // Smooth scrolling on iOS
                         }}
                         onClick={(e) => e.stopPropagation()}
                     >
@@ -490,10 +489,10 @@ export default function ProductPage() {
                             src={activeImage}
                             alt={product.name}
                             style={{
-                                maxWidth: '100%',
-                                maxHeight: '100%',
+                                maxWidth: '100vw',
+                                maxHeight: '100vh',
                                 objectFit: 'contain',
-                                touchAction: 'pinch-zoom' // Explicitly allow pinch-zoom
+                                touchAction: 'pan-x pan-y pinch-zoom' // Explicitly allow pinch-zoom and panning
                             }}
                         />
                     </div>

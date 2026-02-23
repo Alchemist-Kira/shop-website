@@ -419,7 +419,7 @@ export default function AdminProducts() {
                                             Upload Guidelines
                                         </h4>
                                         <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '0.75rem', color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
-                                            <li><strong>Orientation:</strong> Portrait (3:4 or 1:1 ratio) is highly recommended.</li>
+                                            <li><strong>Orientation:</strong> Portrait (3:4 ratio) is highly recommended.</li>
                                             <li><strong>Formats:</strong> JPG, PNG, or WebP.</li>
                                             <li><strong>Size:</strong> Max 2MB per image for fast loading.</li>
                                         </ul>

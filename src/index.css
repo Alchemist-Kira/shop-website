@@ -238,34 +238,60 @@ img {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  height: 50vh;
-  /* Shorter on mobile to preserve landscape aspect ratio somewhat */
+  width: 100%;
+  aspect-ratio: 15 / 8;
+  /* 15:8 ratio on mobile as requested */
 }
 
 @media (min-width: 768px) {
   .hero-section {
-    height: 80vh;
-    /* Taller on desktop */
+    aspect-ratio: 15 / 6;
+    /* Consistent 15:6 aspect ratio on desktop */
   }
 }
 
 /* Banner Typography */
 .banner-title {
-  font-size: 2.5rem;
-  /* mobile size */
+  font-size: 1.5rem;
+  /* smaller mobile size for 15:8 */
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
   font-family: var(--font-family-primary);
-  margin-bottom: var(--space-sm);
+  margin-bottom: var(--space-xs);
 }
 
 .banner-subtitle {
-  font-size: 1rem;
-  /* mobile size */
+  font-size: 0.75rem;
+  /* smaller mobile size for 15:8 */
   font-weight: 400;
   text-transform: uppercase;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
   font-family: 'Courier New', Courier, monospace;
+}
+
+.banner-btn {
+  padding: 0.6rem 1.5rem;
+  font-size: 0.8rem;
+  background-color: transparent;
+  color: white;
+  border: 1px solid white;
+  transition: all 0.3s ease;
+  border-radius: 0;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+@media (hover: hover) {
+  .banner-btn:hover {
+    background-color: white;
+    color: var(--color-text-primary);
+    transform: translateY(-2px);
+  }
+}
+
+.banner-btn:active {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(0);
 }
 
 @media (min-width: 768px) {
@@ -279,6 +305,11 @@ img {
     font-size: 1.25rem;
     /* desktop size */
     letter-spacing: 4px;
+  }
+
+  .banner-btn {
+    padding: 0.875rem 2rem;
+    font-size: var(--font-size-base);
   }
 }
 

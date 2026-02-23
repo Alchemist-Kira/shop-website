@@ -181,15 +181,26 @@ export default function LandingPage() {
                                     {banner.subtitle && (
                                         <p className="banner-subtitle" style={{
                                             maxWidth: '800px',
-                                            margin: '0 auto var(--space-lg) auto',
+                                            margin: '0 auto',
                                             animation: currentBannerIndex === idx ? 'fadeInUp 1s ease-out' : 'none',
                                             textShadow: '0 2px 8px rgba(0,0,0,0.5)'
                                         }}>
                                             {banner.subtitle}
                                         </p>
                                     )}
+                                </div>
 
-                                    <button className="btn btn-primary" style={{ animation: currentBannerIndex === idx ? 'fadeInUp 1.2s ease-out' : 'none' }} onClick={() => {
+                                {/* Absolute Bottom Button */}
+                                <div style={{
+                                    position: 'absolute',
+                                    bottom: '10%',
+                                    left: '0',
+                                    right: '0',
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    zIndex: 10
+                                }}>
+                                    <button className="btn banner-btn" style={{ animation: currentBannerIndex === idx ? 'fadeInUp 1.2s ease-out' : 'none' }} onClick={() => {
                                         document.getElementById('collection').scrollIntoView({ behavior: 'smooth' });
                                     }}>
                                         Explore Collection

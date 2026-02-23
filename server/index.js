@@ -6,6 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import jwt from 'jsonwebtoken';
 import fs from 'fs';
+import sharp from 'sharp';
 import db from './db.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -19,16 +20,51 @@ const app = express();
 const port = process.env.PORT || 3001; // Backend on 3001, Vite frontend on 5173
 
 // Configure multer storage
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, path.join(__dirname, 'uploads/'))
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
-        cb(null, uniqueSuffix + '-' + file.originalname)
-    }
-});
+const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
+
+// Image Optimization Middleware
+const processImages = async (req, res, next) => {
+    try {
+        if (!req.files && !req.file) return next();
+
+        // Single file (Banners)
+        if (req.file) {
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            const filename = uniqueSuffix + '.webp';
+            const outputPath = path.join(__dirname, 'uploads', filename);
+
+            await sharp(req.file.buffer)
+                .webp({ quality: 80, effort: 4 })
+                .resize({ width: 1920, withoutEnlargement: true }) // Max width to avoid huge files
+                .toFile(outputPath);
+
+            req.file.filename = filename;
+            req.file.path = outputPath;
+        }
+
+        // Multiple files (Products)
+        if (req.files && req.files.length > 0) {
+            await Promise.all(req.files.map(async (file) => {
+                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+                const filename = uniqueSuffix + '.webp';
+                const outputPath = path.join(__dirname, 'uploads', filename);
+
+                await sharp(file.buffer)
+                    .webp({ quality: 80, effort: 4 })
+                    .resize({ width: 1200, withoutEnlargement: true }) // Max width for products
+                    .toFile(outputPath);
+
+                file.filename = filename;
+                file.path = outputPath;
+            }));
+        }
+        next();
+    } catch (err) {
+        console.error("Image processing error:", err);
+        return res.status(500).json({ error: 'Image processing failed' });
+    }
+};
 
 app.use(cors());
 app.use(express.json());
@@ -91,7 +127,7 @@ app.get('/api/products/:id', (req, res) => {
 });
 
 // Add Product (with multiple images support and tags)
-app.post('/api/products', authenticateToken, upload.array('images'), (req, res) => {
+app.post('/api/products', authenticateToken, upload.array('images'), processImages, (req, res) => {
     const { name, description, price, previousPrice, stock, sizes, colors, tags, category } = req.body;
     let imagesArr = [];
     if (req.files && req.files.length > 0) {
@@ -146,7 +182,7 @@ app.post('/api/products', authenticateToken, upload.array('images'), (req, res) 
 });
 
 // Update Product (with multiple images replacement support and tags)
-app.put('/api/products/:id', authenticateToken, upload.array('images'), (req, res) => {
+app.put('/api/products/:id', authenticateToken, upload.array('images'), processImages, (req, res) => {
     const { id } = req.params;
     const { name, description, price, previousPrice, stock, sizes, colors, tags, category, existingImages } = req.body;
 
@@ -449,7 +485,7 @@ app.get('/api/banners', (req, res) => {
 });
 
 // Add a banner (Admin)
-app.post('/api/banners', authenticateToken, upload.single('image'), (req, res) => {
+app.post('/api/banners', authenticateToken, upload.single('image'), processImages, (req, res) => {
     const { title, subtitle } = req.body;
     let imageUrl = '';
 

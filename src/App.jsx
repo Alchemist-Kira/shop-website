@@ -22,10 +22,36 @@ function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Close mobile menu and scroll to top on route change
+  // Scroll restoration logic
   useEffect(() => {
     setIsMobileMenuOpen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Save scroll position constantly while on store or home
+    const handleScroll = () => {
+      if (location.pathname === '/' || location.pathname === '/store') {
+        sessionStorage.setItem(`scrollPosition-${location.pathname}`, window.scrollY.toString());
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    // When navigating TO home or store
+    if (location.pathname === '/' || location.pathname === '/store') {
+      const savedScroll = sessionStorage.getItem(`scrollPosition-${location.pathname}`);
+      // Use setTimeout to ensure the DOM has rendered products before scrolling
+      setTimeout(() => {
+        if (savedScroll !== null) {
+          window.scrollTo({ top: parseInt(savedScroll, 10), behavior: 'instant' });
+        } else {
+          window.scrollTo({ top: 0, behavior: 'instant' });
+        }
+      }, 50);
+    } else {
+      // Navigating TO a product page or other page
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+
+    return () => window.removeEventListener('scroll', handleScroll);
   }, [location]);
 
   // Load cart from local storage just to update the counter
@@ -228,7 +254,7 @@ function App() {
                   >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '4px' }}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                     <div style={{ fontSize: '0.95rem', lineHeight: '1.5' }}>
-                      Basundhara, Dhaka-1204, Bangladesh
+                      Plot No-7, Salam Tawar, Road-16, Apollo gate, Basundhara, Dhaka-1204, Bangladesh.
                     </div>
                   </a>
                   {/* Phone Numbers */}
@@ -244,7 +270,7 @@ function App() {
                   </div>
                   {/* Social Links */}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', marginTop: 'var(--space-md)', paddingTop: 'var(--space-md)', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                    <a href="https://www.facebook.com/share/1H2qD63H5z/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.6)', transition: 'color 0.2s', display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--color-accent)'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.6)'}>
+                    <a href="https://www.facebook.com/share/1H2qD63H5z/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.6)', transition: 'color 0.2s', display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }} onMouseEnter={e => e.currentTarget.style.color = '#1877F2'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.6)'}>
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
                       <span style={{ fontSize: '0.95rem' }}>Facebook</span>
                     </a>
