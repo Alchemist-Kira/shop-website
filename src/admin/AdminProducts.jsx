@@ -459,7 +459,7 @@ export default function AdminProducts() {
                                                 onClick={(e) => { e.target.value = null; }}
                                                 onChange={e => {
                                                     if (e.target.files && e.target.files.length > 0) {
-                                                        const newFiles = Array.from(e.target.files).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+                                                        const newFiles = Array.from(e.target.files);
                                                         setImageFiles(prev => [...prev, ...newFiles]);
                                                     }
                                                 }}
