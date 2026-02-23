@@ -200,6 +200,17 @@ export default function AdminProducts() {
         setImageFiles(prev => prev.filter((_, i) => i !== index));
     };
 
+    const handleReorderNewImage = (index, direction) => {
+        setImageFiles(prev => {
+            const newArray = [...prev];
+            const targetIndex = index + direction;
+            if (targetIndex < 0 || targetIndex >= newArray.length) return prev;
+            // Swap
+            [newArray[index], newArray[targetIndex]] = [newArray[targetIndex], newArray[index]];
+            return newArray;
+        });
+    };
+
     const filteredAndSortedProducts = useMemo(() => {
         let result = [...products];
 
@@ -438,12 +449,20 @@ export default function AdminProducts() {
                                             </div>
                                         ))}
 
-                                        {/* New Images */}
                                         {imageFiles.map((file, index) => (
-                                            <div key={`new-${index}`} style={{ position: 'relative', width: '80px', height: '80px' }}>
+                                            <div key={`new-${index}`} style={{ position: 'relative', width: '80px', height: '80px', display: 'flex', flexDirection: 'column' }}>
                                                 <img src={previewUrls[index]} alt="New Product" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'var(--radius-sm)', border: '2px solid var(--color-primary)' }} />
-                                                <div style={{ position: 'absolute', bottom: '4px', left: '50%', transform: 'translateX(-50%)', fontSize: '10px', backgroundColor: 'var(--color-primary)', color: 'white', padding: '2px 6px', borderRadius: '12px', whiteSpace: 'nowrap', fontWeight: 600, boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>New</div>
+                                                <div style={{ position: 'absolute', bottom: '4px', left: '50%', transform: 'translateX(-50%)', fontSize: '10px', backgroundColor: 'var(--color-primary)', color: 'white', padding: '2px 6px', borderRadius: '12px', whiteSpace: 'nowrap', fontWeight: 600, boxShadow: '0 2px 4px rgba(0,0,0,0.2)', zIndex: 5 }}>New</div>
                                                 <button type="button" onClick={() => handleRemoveNewImage(index)} style={{ position: 'absolute', top: '-6px', right: '-6px', backgroundColor: '#d9381e', color: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', cursor: 'pointer', zIndex: 10, boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} title="Remove new image">&times;</button>
+
+                                                <div style={{ position: 'absolute', top: '50%', width: '100%', transform: 'translateY(-50%)', display: 'flex', justifyContent: 'space-between', padding: '0 2px' }}>
+                                                    {index > 0 ? (
+                                                        <button type="button" onClick={() => handleReorderNewImage(index, -1)} style={{ background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', padding: '2px 4px' }}>&lt;</button>
+                                                    ) : <div />}
+                                                    {index < imageFiles.length - 1 ? (
+                                                        <button type="button" onClick={() => handleReorderNewImage(index, 1)} style={{ background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', padding: '2px 4px' }}>&gt;</button>
+                                                    ) : <div />}
+                                                </div>
                                             </div>
                                         ))}
 
@@ -474,8 +493,8 @@ export default function AdminProducts() {
                         {/* Modal Footer */}
                         <div style={{ padding: 'var(--space-lg) var(--space-xl)', borderTop: '1px solid var(--color-border)', display: 'flex', gap: 'var(--space-md)', justifyContent: 'flex-end', backgroundColor: '#faf9f6' }}>
                             <button onClick={closeModal} style={{ padding: '10px 24px', border: '1px solid var(--color-border)', backgroundColor: 'white', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontWeight: 600, fontSize: '1rem' }}>Cancel</button>
-                            <button onClick={handleSave} disabled={isSaving} className="btn btn-primary" style={{ padding: '10px 32px', fontSize: '1rem', cursor: isSaving ? 'not-allowed' : 'pointer' }}>
-                                {isSaving ? 'Saving...' : (modalMode === 'add' ? 'Save' : 'Update Product')}
+                            <button onClick={handleSave} disabled={isSaving} className="btn btn-primary" style={{ padding: '10px 32px', fontSize: '1rem', cursor: isSaving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center' }}>
+                                {isSaving ? <><span className="spinner"></span>Saving...</> : (modalMode === 'add' ? 'Save' : 'Update Product')}
                             </button>
                         </div>
                     </div>

@@ -41,6 +41,17 @@ export default function AdminBanners() {
         setImageFiles(prev => prev.filter((_, i) => i !== index));
     };
 
+    const handleReorderNewImage = (index, direction) => {
+        setImageFiles(prev => {
+            const newArray = [...prev];
+            const targetIndex = index + direction;
+            if (targetIndex < 0 || targetIndex >= newArray.length) return prev;
+            // Swap
+            [newArray[index], newArray[targetIndex]] = [newArray[targetIndex], newArray[index]];
+            return newArray;
+        });
+    };
+
     const handleAddBanner = async (e) => {
         e.preventDefault();
         if (imageFiles.length === 0) {
@@ -139,11 +150,19 @@ export default function AdminBanners() {
                             </div>
 
                             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                                {/* New Images */}
                                 {imageFiles.map((file, index) => (
-                                    <div key={`new-banner-${index}`} style={{ position: 'relative', width: '64px', height: '64px' }}>
+                                    <div key={`new-banner-${index}`} style={{ position: 'relative', width: '64px', height: '64px', display: 'flex', flexDirection: 'column' }}>
                                         <img src={previewUrls[index]} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'var(--radius-sm)', border: '2px solid var(--color-primary)' }} />
                                         <button type="button" onClick={() => handleRemoveNewImage(index)} style={{ position: 'absolute', top: '-6px', right: '-6px', backgroundColor: '#d9381e', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', cursor: 'pointer', zIndex: 10 }} title="Remove image">&times;</button>
+
+                                        <div style={{ position: 'absolute', top: '50%', width: '100%', transform: 'translateY(-50%)', display: 'flex', justifyContent: 'space-between', padding: '0 2px' }}>
+                                            {index > 0 ? (
+                                                <button type="button" onClick={() => handleReorderNewImage(index, -1)} style={{ background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', padding: '2px 4px' }}>&lt;</button>
+                                            ) : <div />}
+                                            {index < imageFiles.length - 1 ? (
+                                                <button type="button" onClick={() => handleReorderNewImage(index, 1)} style={{ background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', padding: '2px 4px' }}>&gt;</button>
+                                            ) : <div />}
+                                        </div>
                                     </div>
                                 ))}
 
@@ -191,9 +210,9 @@ export default function AdminBanners() {
                             type="submit"
                             className="btn btn-primary"
                             disabled={isSaving || imageFiles.length === 0}
-                            style={{ padding: '12px', marginTop: 'var(--space-sm)' }}
+                            style={{ padding: '12px', marginTop: 'var(--space-sm)', cursor: isSaving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                         >
-                            {isSaving ? 'Uploading...' : 'Save Banners'}
+                            {isSaving ? <><span className="spinner"></span>Saving...</> : 'Save Banners'}
                         </button>
                     </form>
                 </div>
