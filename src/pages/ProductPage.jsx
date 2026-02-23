@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '../components/ToastProvider';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 
 export default function ProductPage() {
     const { id } = useParams();
@@ -444,14 +445,13 @@ export default function ProductPage() {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        overflow: 'hidden' // Prevent scrolling the modal background
+                        touchAction: 'none' // Crucial: stops native browser pinch-zoom on the overlay
                     }}
-                    onClick={() => setShowLightbox(false)}
                 >
                     <button
                         onClick={(e) => { e.stopPropagation(); setShowLightbox(false); }}
                         style={{
-                            position: 'fixed', // Keep fixed to screen regardless of zoom
+                            position: 'fixed',
                             top: '20px',
                             right: '20px',
                             backgroundColor: 'rgba(255, 255, 255, 0.8)',
@@ -473,29 +473,28 @@ export default function ProductPage() {
                         &times;
                     </button>
 
-                    <div
-                        style={{
-                            width: '100%',
-                            height: '100%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            overflow: 'auto', // Allow panning if image is larger
-                            WebkitOverflowScrolling: 'touch' // Smooth scrolling on iOS
-                        }}
-                        onClick={(e) => e.stopPropagation()}
+                    <TransformWrapper
+                        initialScale={1}
+                        minScale={1}
+                        maxScale={4}
+                        centerOnInit={true}
+                        wheel={{ step: 0.1 }}
+                        pinch={{ step: 5 }}
                     >
-                        <img
-                            src={activeImage}
-                            alt={product.name}
-                            style={{
-                                maxWidth: '100vw',
-                                maxHeight: '100vh',
-                                objectFit: 'contain',
-                                touchAction: 'pan-x pan-y pinch-zoom' // Explicitly allow pinch-zoom and panning
-                            }}
-                        />
-                    </div>
+                        {({ zoomIn, zoomOut, resetTransform, ...rest }) => (
+                            <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }}>
+                                <img
+                                    src={activeImage}
+                                    alt={product.name}
+                                    style={{
+                                        width: '100vw',
+                                        height: '100vh',
+                                        objectFit: 'contain',
+                                    }}
+                                />
+                            </TransformComponent>
+                        )}
+                    </TransformWrapper>
                 </div>
             )}
         </div>

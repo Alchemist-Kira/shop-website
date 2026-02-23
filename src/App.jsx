@@ -254,7 +254,7 @@ function App() {
                   >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '4px' }}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                     <div style={{ fontSize: '0.95rem', lineHeight: '1.5' }}>
-                      Plot No-7, Salam Tawar, Road-16, Apollo gate, Basundhara, Dhaka-1204, Bangladesh.
+                      Plot No-7, Salam Tower, Road-16, Apollo gate, Basundhara, Dhaka-1204, Bangladesh.
                     </div>
                   </a>
                   {/* Phone Numbers */}
