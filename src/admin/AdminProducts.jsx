@@ -5,6 +5,7 @@ export default function AdminProducts() {
     const { addToast } = useToast();
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
 
     // Unified Modal State ('add', 'edit', null)
     const [modalMode, setModalMode] = useState(null);
@@ -107,6 +108,7 @@ export default function AdminProducts() {
             return;
         }
 
+        setIsSaving(true);
         try {
             const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
             const sizesArr = formData.sizes.split(',').map(s => s.trim()).filter(Boolean);
@@ -163,6 +165,8 @@ export default function AdminProducts() {
         } catch (err) {
             console.error(err);
             addToast(`Error ${modalMode === 'add' ? 'adding' : 'updating'} product`, 'error');
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -455,7 +459,7 @@ export default function AdminProducts() {
                                                 onClick={(e) => { e.target.value = null; }}
                                                 onChange={e => {
                                                     if (e.target.files && e.target.files.length > 0) {
-                                                        const newFiles = Array.from(e.target.files);
+                                                        const newFiles = Array.from(e.target.files).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
                                                         setImageFiles(prev => [...prev, ...newFiles]);
                                                     }
                                                 }}
@@ -470,8 +474,8 @@ export default function AdminProducts() {
                         {/* Modal Footer */}
                         <div style={{ padding: 'var(--space-lg) var(--space-xl)', borderTop: '1px solid var(--color-border)', display: 'flex', gap: 'var(--space-md)', justifyContent: 'flex-end', backgroundColor: '#faf9f6' }}>
                             <button onClick={closeModal} style={{ padding: '10px 24px', border: '1px solid var(--color-border)', backgroundColor: 'white', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontWeight: 600, fontSize: '1rem' }}>Cancel</button>
-                            <button onClick={handleSave} className="btn btn-primary" style={{ padding: '10px 32px', fontSize: '1rem' }}>
-                                {modalMode === 'add' ? 'Save' : 'Update Product'}
+                            <button onClick={handleSave} disabled={isSaving} className="btn btn-primary" style={{ padding: '10px 32px', fontSize: '1rem', cursor: isSaving ? 'not-allowed' : 'pointer' }}>
+                                {isSaving ? 'Saving...' : (modalMode === 'add' ? 'Save' : 'Update Product')}
                             </button>
                         </div>
                     </div>

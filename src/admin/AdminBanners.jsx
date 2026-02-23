@@ -158,7 +158,7 @@ export default function AdminBanners() {
                                         onClick={(e) => { e.target.value = null; }}
                                         onChange={e => {
                                             if (e.target.files && e.target.files.length > 0) {
-                                                const newFiles = Array.from(e.target.files);
+                                                const newFiles = Array.from(e.target.files).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
                                                 setImageFiles(prev => [...prev, ...newFiles]);
                                             }
                                         }}
