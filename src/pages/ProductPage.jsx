@@ -364,22 +364,32 @@ export default function ProductPage() {
 
                         <div style={{ marginTop: 'var(--space-lg)' }}>
                             <div style={{ display: 'flex', gap: '1rem' }}>
-                                <button
-                                    className="btn btn-outline"
-                                    style={{ flex: 1, padding: '0.875rem', fontSize: '1rem' }}
-                                    onClick={handleAddToCart}
-                                    disabled={product.stock <= 0}
-                                >
-                                    Add to Cart
-                                </button>
-                                <button
-                                    className="btn btn-primary"
-                                    style={{ flex: 1, padding: '0.875rem', fontSize: '1rem' }}
-                                    onClick={handleBuyNow}
-                                    disabled={product.stock <= 0}
-                                >
-                                    {product.stock > 0 ? 'Buy Now' : 'Out of Stock'}
-                                </button>
+                                {product.stock > 0 ? (
+                                    <>
+                                        <button
+                                            className="btn btn-outline"
+                                            style={{ flex: 1, padding: '0.875rem', fontSize: '1rem' }}
+                                            onClick={handleAddToCart}
+                                        >
+                                            Add to Cart
+                                        </button>
+                                        <button
+                                            className="btn btn-primary"
+                                            style={{ flex: 1, padding: '0.875rem', fontSize: '1rem' }}
+                                            onClick={handleBuyNow}
+                                        >
+                                            Buy Now
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        className="btn btn-primary"
+                                        style={{ width: 'calc(50% - 0.5rem)', padding: '0.875rem', fontSize: '1rem', opacity: 0.5, cursor: 'not-allowed' }}
+                                        disabled
+                                    >
+                                        Out of Stock
+                                    </button>
+                                )}
                             </div>
 
                             {product.stock > 0 && product.stock <= 5 && (
@@ -473,13 +483,78 @@ export default function ProductPage() {
                         &times;
                     </button>
 
+                    {imagesList.length > 1 && (
+                        <>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    const idx = imagesList.indexOf(activeImage);
+                                    setActiveImage(imagesList[(idx - 1 + imagesList.length) % imagesList.length]);
+                                }}
+                                style={{
+                                    position: 'fixed',
+                                    top: '50%',
+                                    left: '20px',
+                                    transform: 'translateY(-50%)',
+                                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                                    color: 'black',
+                                    border: 'none',
+                                    borderRadius: '50%',
+                                    width: '44px',
+                                    height: '44px',
+                                    fontSize: '1.5rem',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    zIndex: 2001,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                                }}
+                            >
+                                &lt;
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    const idx = imagesList.indexOf(activeImage);
+                                    setActiveImage(imagesList[(idx + 1) % imagesList.length]);
+                                }}
+                                style={{
+                                    position: 'fixed',
+                                    top: '50%',
+                                    right: '20px',
+                                    transform: 'translateY(-50%)',
+                                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                                    color: 'black',
+                                    border: 'none',
+                                    borderRadius: '50%',
+                                    width: '44px',
+                                    height: '44px',
+                                    fontSize: '1.5rem',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    zIndex: 2001,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                                }}
+                            >
+                                &gt;
+                            </button>
+                        </>
+                    )}
+
                     <TransformWrapper
+                        key={activeImage}
                         initialScale={1}
                         minScale={1}
-                        maxScale={4}
+                        maxScale={200}
                         centerOnInit={true}
                         wheel={{ step: 0.1 }}
                         pinch={{ step: 5 }}
+                        doubleClick={{ disabled: false, mode: "toggle", step: 3 }}
                     >
                         {({ zoomIn, zoomOut, resetTransform, ...rest }) => (
                             <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }}>
