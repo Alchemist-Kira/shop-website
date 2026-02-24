@@ -33,7 +33,7 @@ export default function AdminLogin() {
                 }
                 // Dispatch event so layout can update
                 window.dispatchEvent(new Event('authStatusChanged'));
-                navigate('/admin');
+                navigate('/login');
             } else {
                 setError(data.error || 'Invalid credentials');
             }

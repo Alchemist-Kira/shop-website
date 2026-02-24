@@ -133,7 +133,7 @@ function App() {
     <>
       {/* Navigation - Hidden on admin routes */}
       <Routes>
-        <Route path="/admin/*" element={null} />
+        <Route path="/login/*" element={null} />
         <Route path="*" element={
           <header style={{
             position: 'sticky',
@@ -251,7 +251,7 @@ function App() {
           <Route path="/product/:id" element={<ProductPage />} />
           <Route path="/order" element={<OrderPage />} />
 
-          <Route path="/admin" element={authStatus ? <AdminLayout onLogout={handleLogout} /> : <AdminLogin />}>
+          <Route path="/login" element={authStatus ? <AdminLayout onLogout={handleLogout} /> : <AdminLogin />}>
             <Route index element={<AdminDashboard />} />
             <Route path="products" element={<AdminProducts />} />
             <Route path="banners" element={<AdminBanners />} />
@@ -264,7 +264,7 @@ function App() {
 
       {/* Footer - Hidden on admin routes */}
       <Routes>
-        <Route path="/admin/*" element={null} />
+        <Route path="/login/*" element={null} />
         <Route path="*" element={
           <footer className="site-footer">
             <div className="container">

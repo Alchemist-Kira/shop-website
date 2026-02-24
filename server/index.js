@@ -621,7 +621,7 @@ app.post('/api/orders', orderLimiter, async (req, res) => {
                 const pushPayload = JSON.stringify({
                     title: 'New Order!',
                     body: `Received an order from ${customerName} for ${totalAmount} Tk`,
-                    url: '/admin',
+                    url: '/login',
                     icon: '/src/assets/icon.png'
                 });
 
