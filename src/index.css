@@ -25,6 +25,8 @@ html {
   --color-accent: #C7A17A;
   /* Warm gold/champagne accent */
   --color-accent-hover: #B5906A;
+  --color-primary: #C7A17A;
+  /* Added for UI components */
   --color-border: #E5E5E5;
   --color-surface-dim: #F2F0EB;
 
@@ -91,6 +93,31 @@ a {
   text-decoration: none;
   color: inherit;
   transition: color var(--transition-fast);
+}
+
+/* Navbar Link Animation */
+.nav-link {
+  position: relative;
+  transition: color var(--transition-fast);
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -4px;
+  left: 0;
+  background-color: var(--color-accent);
+  transition: width var(--transition-fast);
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+.nav-link:hover {
+  color: var(--color-accent) !important;
 }
 
 button {

@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect, useLayoutEffect } from 'react';
+import { Routes, Route, Link, useNavigate, useLocation, useNavigationType } from 'react-router-dom';
+import ReactGA from 'react-ga4';
 import LandingPage from './pages/LandingPage';
 import ProductPage from './pages/ProductPage';
 import OrderPage from './pages/OrderPage';
@@ -14,7 +15,7 @@ import NotFoundPage from './pages/NotFoundPage';
 
 function App() {
   const [cartCount, setCartCount] = useState(0);
-  const [authStatus, setAuthStatus] = useState(false);
+  const [authStatus, setAuthStatus] = useState(!!(localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token')));
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -22,37 +23,47 @@ function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Scroll restoration logic
+  // Track page views
   useEffect(() => {
+    ReactGA.send({ hitType: "pageview", page: location.pathname + location.search });
+  }, [location]);
+  const navType = useNavigationType();
+
+  // Scroll restoration logic
+  useLayoutEffect(() => {
     setIsMobileMenuOpen(false);
 
-    // Save scroll position constantly while on store or home
-    const handleScroll = () => {
-      if (location.pathname === '/' || location.pathname === '/store') {
-        sessionStorage.setItem(`scrollPosition-${location.pathname}`, window.scrollY.toString());
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-
-    // When navigating TO home or store
-    if (location.pathname === '/' || location.pathname === '/store') {
-      const savedScroll = sessionStorage.getItem(`scrollPosition-${location.pathname}`);
-      // Use setTimeout to ensure the DOM has rendered products before scrolling
-      setTimeout(() => {
-        if (savedScroll !== null) {
-          window.scrollTo({ top: parseInt(savedScroll, 10), behavior: 'instant' });
-        } else {
-          window.scrollTo({ top: 0, behavior: 'instant' });
-        }
-      }, 50);
+    if (navType !== 'POP') {
+      // New page navigation -> Instant scroll to top (no flash)
+      window.scrollTo(0, 0);
     } else {
-      // Navigating TO a product page or other page
-      window.scrollTo({ top: 0, behavior: 'instant' });
-    }
+      // Back button navigation -> Restore scroll
+      const savedScroll = sessionStorage.getItem(`scroll-${location.pathname}`);
+      if (savedScroll) {
+        const target = parseInt(savedScroll, 10);
+        window.scrollTo(0, target);
 
+        // Retry a few times in case content is still loading asynchronusly (like products)
+        let attempts = 0;
+        const interval = setInterval(() => {
+          if (document.documentElement.scrollHeight >= target) {
+            window.scrollTo(0, target);
+          }
+          attempts++;
+          if (attempts > 10) clearInterval(interval);
+        }, 50);
+      }
+    }
+  }, [location.pathname, navType]);
+
+  // Keep tracking current scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      sessionStorage.setItem(`scroll-${location.pathname}`, window.scrollY.toString());
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [location]);
+  }, [location.pathname]);
 
   // Load cart from local storage just to update the counter
   useEffect(() => {
@@ -94,6 +105,30 @@ function App() {
     }
   };
 
+  const scrollToSection = (e, sectionId) => {
+    e.preventDefault();
+    setIsMobileMenuOpen(false); // Close mobile menu if open
+
+    // If not on the homepage, navigate there first
+    if (location.pathname !== '/') {
+      navigate('/');
+      // Wait for render before scrolling
+      setTimeout(() => {
+        const el = document.getElementById(sectionId);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+        else window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 100);
+    } else {
+      // Already on homepage, just scroll
+      if (sectionId === 'hero') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        const el = document.getElementById(sectionId);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
+
   return (
     <>
       {/* Navigation - Hidden on admin routes */}
@@ -120,9 +155,14 @@ function App() {
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                 </button>
                 <nav className="desktop-nav-links flex items-center gap-md">
-                  <Link to="/" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} style={{ fontWeight: 500, color: 'inherit', textDecoration: 'none' }}>Home</Link>
-                  <Link to="/store" style={{ fontWeight: 500, color: 'inherit', textDecoration: 'none' }}>Store</Link>
-                  <a href="/#collection" style={{ fontWeight: 500, color: 'inherit', textDecoration: 'none' }}>Collection</a>
+                  <a href="/" onClick={(e) => scrollToSection(e, 'hero')} className="nav-link" style={{ fontWeight: 500, color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}>Home</a>
+                  <Link to="/store" onClick={(e) => {
+                    if (location.pathname === '/store') {
+                      e.preventDefault();
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }} className="nav-link" style={{ fontWeight: 500, color: 'inherit', textDecoration: 'none' }}>Store</Link>
+                  <a href="/#collection" onClick={(e) => scrollToSection(e, 'collection')} className="nav-link" style={{ fontWeight: 500, color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}>Collection</a>
                 </nav>
               </div>
 
@@ -192,9 +232,15 @@ function App() {
           <button onClick={() => setIsMobileMenuOpen(false)} style={{ fontSize: '1.5rem', color: 'var(--color-text-secondary)' }}>&times;</button>
         </div>
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', fontSize: '1.25rem' }}>
-          <Link to="/" onClick={() => { setIsMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }} style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>Home</Link>
-          <Link to="/store" onClick={() => setIsMobileMenuOpen(false)} style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>Store</Link>
-          <a href="/#collection" onClick={() => setIsMobileMenuOpen(false)} style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>Collection</a>
+          <a href="/" onClick={(e) => scrollToSection(e, 'hero')} style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem', color: 'inherit', textDecoration: 'none' }}>Home</a>
+          <Link to="/store" onClick={(e) => {
+            setIsMobileMenuOpen(false);
+            if (location.pathname === '/store') {
+              e.preventDefault();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }} style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem', color: 'inherit', textDecoration: 'none' }}>Store</Link>
+          <a href="/#collection" onClick={(e) => scrollToSection(e, 'collection')} style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem', color: 'inherit', textDecoration: 'none' }}>Collection</a>
         </nav>
       </div>
 
@@ -235,9 +281,9 @@ function App() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
                   <h4 style={{ color: 'white', fontSize: '1.1rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Explore</h4>
                   <nav style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <Link to="/" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => e.target.style.color = 'var(--color-accent)'} onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.6)'}>Home</Link>
+                    <a href="/" onClick={(e) => scrollToSection(e, 'hero')} style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', transition: 'color 0.2s', cursor: 'pointer' }} onMouseEnter={e => e.target.style.color = 'var(--color-accent)'} onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.6)'}>Home</a>
                     <Link to="/store" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => e.target.style.color = 'var(--color-accent)'} onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.6)'}>Store</Link>
-                    <a href="/#collection" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => e.target.style.color = 'var(--color-accent)'} onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.6)'}>Collections</a>
+                    <a href="/#collection" onClick={(e) => scrollToSection(e, 'collection')} style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', transition: 'color 0.2s', cursor: 'pointer' }} onMouseEnter={e => e.target.style.color = 'var(--color-accent)'} onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.6)'}>Collections</a>
                   </nav>
                 </div>
 
@@ -254,7 +300,7 @@ function App() {
                   >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '4px' }}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                     <div style={{ fontSize: '0.95rem', lineHeight: '1.5' }}>
-                      Plot No-7, Salam Tower, Road-16, Apollo gate, Basundhara, Dhaka-1204, Bangladesh.
+                      Plot No-7, Salam Tower, Road-16, Apollo gate, Bashundhara, Dhaka-1204, Bangladesh.
                     </div>
                   </a>
                   {/* Contact Methods */}

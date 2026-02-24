@@ -1,6 +1,5 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useToast } from '../components/ToastProvider';
-import notificationSoundFile from '../assets/notification-sound.mp3';
 
 export default function AdminDashboard() {
     const { addToast } = useToast();
@@ -9,7 +8,6 @@ export default function AdminDashboard() {
     const [filterStatus, setFilterStatus] = useState('all');
     const [sortBy, setSortBy] = useState('newest');
     const [searchQuery, setSearchQuery] = useState('');
-    const audioRef = useRef(null);
 
     const handleUpdateStatus = async (orderId, newStatus) => {
         try {
@@ -129,74 +127,16 @@ export default function AdminDashboard() {
     useEffect(() => {
         fetchOrders();
 
-        const soundEnabledRef = { current: true };
-        fetch('/api/settings')
-            .then(res => res.json())
-            .then(data => {
-                if (data.notification_sound_enabled === 'false') {
-                    soundEnabledRef.current = false;
-                }
-            })
-            .catch(err => console.error("Failed to fetch sound settings:", err));
-
-        // Setup Server-Sent Events (SSE) for real-time notifications
-        const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
-        if (!token) return;
-
-        // Request notification permission if not asked yet
-        if ("Notification" in window && Notification.permission === "default") {
-            Notification.requestPermission();
-        }
-
-        const eventSource = new EventSource(`/api/orders/stream?token=${token}`);
-
-        eventSource.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                if (data.connected) return; // Ignore ping/connection confirm
-
-                // When a new order arrives, prepend it to the list and show a notification
-                setOrders(prev => [data, ...prev]);
-                addToast(`New order received from ${data.customerName}!`, 'success');
-
-                // Play notification sound
-                if (soundEnabledRef.current && audioRef.current) {
-                    audioRef.current.currentTime = 0; // reset to beginning
-                    audioRef.current.play().catch(e => console.error("Error playing sound. Browsers often block autoplaying audio if the user hasn't interacted with the page first:", e));
-                }
-
-                // Show OS notification if permitted (helps if tab is in background)
-                if ("Notification" in window && Notification.permission === "granted") {
-                    const title = "New Order!";
-                    const options = {
-                        body: `Received an order from ${data.customerName}`,
-                        icon: '/src/assets/icon.png',
-                        requireInteraction: true // keep it on screen until they click
-                    };
-
-                    // Try using ServiceWorker to push the notification (required for consistent background delivery on many OS)
-                    navigator.serviceWorker?.getRegistration().then(reg => {
-                        if (reg) {
-                            reg.showNotification(title, options);
-                        } else {
-                            new Notification(title, options);
-                        }
-                    }).catch(() => {
-                        new Notification(title, options); // absolute fallback
-                    });
-                }
-            } catch (err) {
-                console.error("SSE parse error", err);
-            }
+        // Listen for new orders broadcasted by AdminLayout
+        const handleNewOrder = (event) => {
+            const newOrder = event.detail;
+            setOrders(prev => [newOrder, ...prev]);
         };
 
-        eventSource.onerror = (err) => {
-            console.error("SSE connection error", err);
-            eventSource.close(); // Close on error to prevent infinite rapid reconnection loops if auth fails
-        };
+        window.addEventListener('new-admin-order', handleNewOrder);
 
         return () => {
-            eventSource.close();
+            window.removeEventListener('new-admin-order', handleNewOrder);
         };
     }, []);
 
@@ -320,9 +260,6 @@ export default function AdminDashboard() {
 
     return (
         <div>
-            {/* Hidden audio element for notifications */}
-            <audio ref={audioRef} src={notificationSoundFile} preload="auto" />
-
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-xl)', flexWrap: 'wrap', gap: '1rem' }}>
                 <h1 style={{ fontSize: '2rem', fontWeight: 600 }}>Order Management</h1>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -462,16 +399,22 @@ export default function AdminDashboard() {
                                                 )}
                                                 <div style={{ flex: 1 }}>
                                                     <div style={{ fontWeight: 500 }}>
-                                                        <a
-                                                            href={`/product/${item.productId}`}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            style={{ color: 'var(--color-text-primary)', textDecoration: 'none', borderBottom: '1px solid transparent' }}
-                                                            onMouseEnter={e => e.currentTarget.style.borderBottom = '1px solid var(--color-accent)'}
-                                                            onMouseLeave={e => e.currentTarget.style.borderBottom = '1px solid transparent'}
-                                                        >
-                                                            {item.name}
-                                                        </a>
+                                                        {item.productId ? (
+                                                            <a
+                                                                href={`/product/${item.productId}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                style={{ color: 'var(--color-text-primary)', textDecoration: 'none', borderBottom: '1px solid transparent' }}
+                                                                onMouseEnter={e => e.currentTarget.style.borderBottom = '1px solid var(--color-accent)'}
+                                                                onMouseLeave={e => e.currentTarget.style.borderBottom = '1px solid transparent'}
+                                                            >
+                                                                {item.name}
+                                                            </a>
+                                                        ) : (
+                                                            <span style={{ color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>
+                                                                {item.name} (Product Deleted)
+                                                            </span>
+                                                        )}
                                                     </div>
 
                                                     {/* Variant Details */}

@@ -114,12 +114,16 @@ export default function LandingPage() {
 
     // Safety check for active title/subtitle mapping
     const getActiveBanner = () => {
-        if (displayBanners.length <= 1) return displayBanners[0] || {};
+        if (displayBanners.length === 0) return {};
+        if (displayBanners.length === 1) return displayBanners[0];
         if (currentBannerIndex === displayBanners.length + 1) return displayBanners[0];
         if (currentBannerIndex === 0) return displayBanners[displayBanners.length - 1];
         return displayBanners[currentBannerIndex - 1] || {};
     };
     const activeBanner = getActiveBanner();
+
+    // The index used for visual positioning
+    const visualIndex = displayBanners.length > 1 ? currentBannerIndex : 0;
 
     return (
         <div className="landing-page">
@@ -142,7 +146,7 @@ export default function LandingPage() {
                         position: 'absolute',
                         top: 0, left: 0, right: 0, bottom: 0,
                         display: 'flex',
-                        transform: `translateX(-${(currentBannerIndex / renderBanners.length) * 100}%)`,
+                        transform: `translateX(-${(visualIndex / renderBanners.length) * 100}%)`,
                         transition: isTransitioning ? 'transform 0.8s ease-in-out' : 'none',
                         width: `${renderBanners.length * 100}%`
                     }}>
@@ -162,7 +166,7 @@ export default function LandingPage() {
                                     backgroundImage: `url("${banner.imageUrl}")`,
                                     backgroundSize: 'cover',
                                     backgroundPosition: 'center 30%',
-                                    filter: 'brightness(0.7)',
+                                    filter: 'brightness(0.9)',
                                     zIndex: 1
                                 }}></div>
 
@@ -227,7 +231,7 @@ export default function LandingPage() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xl)' }}>
                         {Object.entries(
                             (Array.isArray(products) ? products : []).reduce((acc, product) => {
-                                const cat = product.category || 'Uncategorized';
+                                const cat = product.category || 'Other Collection';
                                 if (!acc[cat]) acc[cat] = [];
                                 acc[cat].push(product);
                                 return acc;
@@ -261,7 +265,7 @@ export default function LandingPage() {
                                     ))}
                                     {categoryProducts.length > 7 && (
                                         <Link
-                                            to={`/store?category=${encodeURIComponent(category)}`}
+                                            to={category === 'Other Collection' ? '/store' : `/store?category=${encodeURIComponent(category)}`}
                                             style={{
                                                 textDecoration: 'none',
                                                 display: 'flex',

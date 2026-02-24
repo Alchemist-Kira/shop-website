@@ -4,7 +4,7 @@ This document provides a comprehensive technical overview of the **Marbilo Luxur
 
 ---
 
-## 🚀 Tech Stack
+## Tech Stack
 
 - **Frontend**: [React 19](https://react.dev/) + [Vite](https://vitejs.dev/)
 - **Backend**: [Node.js](https://nodejs.org/) + [Express 5](https://expressjs.com/)
@@ -14,7 +14,7 @@ This document provides a comprehensive technical overview of the **Marbilo Luxur
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 ├── /server                 # Backend API & Database
@@ -35,7 +35,7 @@ This document provides a comprehensive technical overview of the **Marbilo Luxur
 
 ---
 
-## 🛠️ Setup & Installation
+## Setup & Installation
 
 ### Prerequisites
 - Node.js (v18+)
@@ -55,7 +55,7 @@ This document provides a comprehensive technical overview of the **Marbilo Luxur
 
 ---
 
-## 🔐 Environment Configuration (.env)
+## Environment Configuration (.env)
 
 The root `.env` file manages critical security and server settings.
 
@@ -75,7 +75,7 @@ ADMIN_PASSWORD=your_secure_password
 
 ---
 
-## 🗄️ Database Schema
+## Database Schema
 
 The application uses SQLite for persistent storage. The schema is defined in `[server/db.js](file:///d:/CP/Software/shop%20website/shop-website/server/db.js)`.
 
@@ -88,7 +88,7 @@ The application uses SQLite for persistent storage. The schema is defined in `[s
 
 ---
 
-## 🎨 Design System
+## Design System
 
 The project uses a custom Vanilla CSS design system located in `[src/index.css](file:///d:/CP/Software/shop%20website/shop-website/src/index.css)`.
 
@@ -101,7 +101,7 @@ We use CSS `clamp()` for typography to ensure text scales seamlessly from mobile
 
 ---
 
-## 📦 Key Features & Implementation Details
+## Key Features & Implementation Details
 
 ### Admin Dashboard
 - **Authentication**: JWT-based session management.
@@ -111,23 +111,25 @@ We use CSS `clamp()` for typography to ensure text scales seamlessly from mobile
 ### Order Flow
 - **Validation**: Strict Bangladesh phone number validation in `[OrderPage.jsx](file:///d:/CP/Software/shop%20website/shop-website/src/pages/OrderPage.jsx)` using Regex.
 - **COD**: Optimized for Cash on Delivery with clear "Total Due" and "Payment: COD" labels on receipts.
+- **Stock Management**: Inventory automatically deducts on order placement, and automatically restores if an admin cancels the order from the dashboard.
 
-### Media Management
+### Media & UI Management
 - Handled via `multer`. Images are stored in `/server/uploads` and served statically.
+- **Zoom Interactions**: Mobile product images use `react-zoom-pan-pinch` for native-feeling pinch-to-zoom, double-tap, and pan functionality within a lightbox overlay. Native browser pinch-zoom is disabled on the viewport.
 
 ---
 
-## 💡 How to Contribute / Extend
+## How to Contribute / Extend
 1. **Adding a Page**: Create a new component in `/src/pages` and add the route in `App.jsx`.
 2. **Changing Styles**: Always use the CSS variables defined in `:root` of `index.css` to maintain brand consistency.
 3. **API Changes**: Modify `server/index.js` and use the `authenticateToken` middleware for any route that should be restricted to admins.
 
 ---
 
-## 🚀 Deployment
+## Deployment
 
 For full details on how to take the site live, refer to the:  
-👉 **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)**
+**[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)**
 
 ### Quick Recommendation
 - Use **Render.com** for easiest setup with SQLite (Persistent Disk).

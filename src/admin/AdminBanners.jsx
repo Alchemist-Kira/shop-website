@@ -15,7 +15,11 @@ export default function AdminBanners() {
     useEffect(() => {
         const urls = imageFiles.map(file => URL.createObjectURL(file));
         setPreviewUrls(urls);
-        return () => urls.forEach(url => URL.revokeObjectURL(url));
+        return () => {
+            setTimeout(() => {
+                urls.forEach(url => URL.revokeObjectURL(url));
+            }, 100);
+        };
     }, [imageFiles]);
 
     useEffect(() => {
@@ -81,6 +85,9 @@ export default function AdminBanners() {
                 if (response.ok) {
                     successCount++;
                 } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error("Upload failed:", errorData);
+                    addToast(`Upload failed: ${errorData.error || response.statusText}`, "error");
                     failCount++;
                 }
             }
@@ -91,12 +98,9 @@ export default function AdminBanners() {
                 setImageFiles([]);
                 fetchBanners();
             }
-            if (failCount > 0) {
-                addToast(`Failed to add ${failCount} banner${failCount > 1 ? 's' : ''}`, "error");
-            }
         } catch (error) {
             console.error("Add banner error:", error);
-            addToast("Network error while adding banners", "error");
+            addToast(`Upload Error: ${error.message}`, "error");
         } finally {
             setIsSaving(false);
         }
@@ -143,7 +147,7 @@ export default function AdminBanners() {
                                     Banner Guidelines
                                 </h4>
                                 <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '0.75rem', color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
-                                    <li><strong>Dimensions:</strong> Wide Landscape (1920x600px) is ideal.</li>
+                                    <li><strong>Recommended:</strong> 1500x600px (Wide Landscape).</li>
                                     <li><strong>Formats:</strong> JPG, PNG, or WebP.</li>
                                     <li><strong>Size:</strong> Max 1MB (Critical for homepage speed).</li>
                                 </ul>

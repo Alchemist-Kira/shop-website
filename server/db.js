@@ -1,6 +1,11 @@
 import Database from 'better-sqlite3';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const db = new Database('shop.db', { verbose: console.log });
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const db = new Database(path.join(__dirname, 'shop.db'), { verbose: console.log });
 
 // Create Tables
 db.exec(`
@@ -47,6 +52,14 @@ db.exec(`
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS admin_subscriptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    endpoint TEXT UNIQUE NOT NULL,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 // Safe migrations for existing database
@@ -63,8 +76,14 @@ try {
 } catch (e) { /* Column already exists */ }
 
 try {
-  db.exec(`ALTER TABLE products ADD COLUMN category TEXT DEFAULT 'Uncategorized'`);
+  db.exec(`ALTER TABLE products ADD COLUMN category TEXT DEFAULT ''`);
 } catch (e) { /* Column already exists */ }
+
+// Migration: Remove legacy 'Uncategorized' labels from existing products and settings
+try {
+  db.exec(`UPDATE products SET category = '' WHERE category = 'Uncategorized'`);
+  db.exec(`UPDATE products SET category = '' WHERE category = 'uncategorized'`);
+} catch (e) { }
 
 try {
   db.exec(`ALTER TABLE products ADD COLUMN previousPrice REAL`);
@@ -82,6 +101,8 @@ try { db.exec(`ALTER TABLE orders ADD COLUMN orderNote TEXT`); } catch (e) { }
 // New Order Item Fields
 try { db.exec(`ALTER TABLE order_items ADD COLUMN selectedSize TEXT`); } catch (e) { }
 try { db.exec(`ALTER TABLE order_items ADD COLUMN selectedColor TEXT`); } catch (e) { }
+try { db.exec(`ALTER TABLE order_items ADD COLUMN productName_snapshot TEXT`); } catch (e) { }
+try { db.exec(`ALTER TABLE order_items ADD COLUMN productImage_snapshot TEXT`); } catch (e) { }
 
 // Seed default settings if they don't exist
 try {

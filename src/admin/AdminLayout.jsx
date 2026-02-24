@@ -1,9 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
+import { useToast } from '../components/ToastProvider';
+import notificationSoundFile from '../assets/notification-sound.mp3';
 
 export default function AdminLayout({ onLogout }) {
     const location = useLocation();
+    const { addToast } = useToast();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const audioRef = useRef(null);
 
     const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
     const closeSidebar = () => setIsSidebarOpen(false);
@@ -19,8 +23,96 @@ export default function AdminLayout({ onLogout }) {
         transition: 'background-color 0.2s, color 0.2s',
     });
 
+    useEffect(() => {
+        const soundEnabledRef = { current: true };
+        fetch('/api/settings')
+            .then(res => res.json())
+            .then(data => {
+                if (data.notification_sound_enabled === 'false') {
+                    soundEnabledRef.current = false;
+                }
+            })
+            .catch(err => console.error("Failed to fetch sound settings:", err));
+
+        const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+        if (!token) return;
+
+        if ("Notification" in window && Notification.permission === "default") {
+            Notification.requestPermission();
+        }
+
+        // --- WEB PUSH SUBSCRIPTION ---
+        const setupWebPush = async () => {
+            if ('serviceWorker' in navigator && 'PushManager' in window && Notification.permission === 'granted') {
+                try {
+                    const registration = await navigator.serviceWorker.register('/sw.js');
+
+                    const keyRes = await fetch('/api/push/vapid-publicKey', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (!keyRes.ok) return;
+                    const { publicKey } = await keyRes.json();
+
+                    const padding = '='.repeat((4 - publicKey.length % 4) % 4);
+                    const base64 = (publicKey + padding).replace(/-/g, '+').replace(/_/g, '/');
+                    const rawData = window.atob(base64);
+                    const applicationServerKey = new Uint8Array(rawData.length);
+                    for (let i = 0; i < rawData.length; ++i) {
+                        applicationServerKey[i] = rawData.charCodeAt(i);
+                    }
+
+                    const subscription = await registration.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey
+                    });
+
+                    await fetch('/api/push/subscribe', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ subscription })
+                    });
+                } catch (err) {
+                    console.error("Web Push setup failed:", err);
+                }
+            }
+        };
+        setupWebPush();
+
+        const eventSource = new EventSource(`/api/orders/stream?token=${token}`);
+
+        eventSource.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.connected) return;
+
+                // Broadcast the event so AdminDashboard can update its list if it's open
+                window.dispatchEvent(new CustomEvent('new-admin-order', { detail: data }));
+                addToast(`New order received from ${data.customerName}!`, 'success');
+
+                if (soundEnabledRef.current && audioRef.current) {
+                    audioRef.current.currentTime = 0;
+                    audioRef.current.play().catch(e => console.error("Audio autoplay blocked:", e));
+                }
+            } catch (err) {
+                console.error("SSE parse error", err);
+            }
+        };
+
+        eventSource.onerror = (err) => {
+            console.error("SSE connection error", err);
+            eventSource.close();
+        };
+
+        return () => eventSource.close();
+    }, [addToast]);
+
     return (
         <div style={{ display: 'flex', height: '100vh', backgroundColor: '#F8F9FA', overflow: 'hidden' }}>
+            {/* Hidden audio element for global notifications */}
+            <audio ref={audioRef} src={notificationSoundFile} preload="auto" />
 
             {/* Mobile Overlay */}
             <div

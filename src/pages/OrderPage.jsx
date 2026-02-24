@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import ReactGA from 'react-ga4';
 import { useToast } from '../components/ToastProvider';
 
 export default function OrderPage() {
@@ -80,27 +81,47 @@ export default function OrderPage() {
         setPlacingOrder(true);
 
         try {
+            const orderPayload = {
+                customerName: formData.name,
+                customerEmail: '', // Optional/Legacy support, ensuring it's not null for schema constraints
+                customerPhone: formData.phone,
+                shippingArea: formData.shippingArea,
+                customerAddress: formData.address,
+                orderNote: formData.orderNote,
+                totalAmount,
+                items: cart
+            };
+
             const response = await fetch('/api/orders', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    customerName: formData.name,
-                    customerPhone: formData.phone,
-                    shippingArea: formData.shippingArea,
-                    customerAddress: formData.address,
-                    orderNote: formData.orderNote,
-                    totalAmount,
-                    items: cart
-                })
+                body: JSON.stringify(orderPayload)
             });
 
+            const result = await response.json();
+
             if (response.ok) {
+                // Track successful purchase
+                ReactGA.event('purchase', {
+                    transaction_id: `ORD_${Date.now()}`,
+                    value: totalAmount,
+                    currency: 'BDT',
+                    items: cart.map(item => ({
+                        item_id: item.productId,
+                        item_name: item.name,
+                        item_variant: item.selectedSize + (item.selectedColor ? `, ${item.selectedColor}` : ''),
+                        price: item.price,
+                        quantity: item.quantity
+                    }))
+                });
+
                 setOrderSuccess(true);
                 setCart([]);
                 localStorage.removeItem('shop_cart');
                 window.dispatchEvent(new Event('cartUpdated'));
             } else {
-                addToast('Failed to place order. Please try again.', 'error');
+                addToast(result.error || 'Failed to place order. Please try again.', 'error');
+                if (result.details) console.error('Order Error Details:', result.details);
             }
         } catch (err) {
             console.error(err);
@@ -243,8 +264,8 @@ export default function OrderPage() {
                                     onBlur={e => e.target.style.borderColor = 'var(--color-border)'}
                                 >
                                     <option value="" disabled>Select Delivery Area</option>
-                                    <option value="Inside Dhaka">Inside Dhaka</option>
-                                    <option value="Outside Dhaka">Outside Dhaka</option>
+                                    <option value="Inside Dhaka">Inside Dhaka ({settings.delivery_inside} ৳)</option>
+                                    <option value="Outside Dhaka">Outside Dhaka ({settings.delivery_outside} ৳)</option>
                                 </select>
                             </div>
 

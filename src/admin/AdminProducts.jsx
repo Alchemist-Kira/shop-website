@@ -18,9 +18,16 @@ export default function AdminProducts() {
     const [existingImages, setExistingImages] = useState([]);
 
     useEffect(() => {
+        // Create URLs only once per file set
         const urls = imageFiles.map(file => URL.createObjectURL(file));
         setPreviewUrls(urls);
-        return () => urls.forEach(url => URL.revokeObjectURL(url));
+
+        // Cleanup: Revoke only after a short delay or on next change to avoid race conditions
+        return () => {
+            setTimeout(() => {
+                urls.forEach(url => URL.revokeObjectURL(url));
+            }, 100);
+        };
     }, [imageFiles]);
     const [searchQuery, setSearchQuery] = useState('');
     const [availableCategories, setAvailableCategories] = useState([]);
@@ -143,7 +150,8 @@ export default function AdminProducts() {
                     fetchProducts();
                     addToast('Product added successfully', 'success');
                 } else {
-                    addToast('Failed to add product', 'error');
+                    const errorData = await response.json().catch(() => ({}));
+                    addToast(`Failed to add product: ${errorData.error || response.statusText}`, 'error');
                 }
             } else if (modalMode === 'edit') {
                 submitData.append('existingImages', JSON.stringify(existingImages));
@@ -159,12 +167,13 @@ export default function AdminProducts() {
                     fetchProducts();
                     addToast('Product updated successfully', 'success');
                 } else {
-                    addToast('Failed to update product', 'error');
+                    const errorData = await response.json().catch(() => ({}));
+                    addToast(`Failed to update product: ${errorData.error || response.statusText}`, 'error');
                 }
             }
-        } catch (err) {
-            console.error(err);
-            addToast(`Error ${modalMode === 'add' ? 'adding' : 'updating'} product`, 'error');
+        } catch (error) {
+            console.error('Save product error:', error);
+            addToast(`Error saving product: ${error.message}`, 'error');
         } finally {
             setIsSaving(false);
         }
@@ -315,7 +324,7 @@ export default function AdminProducts() {
                                                 <img src={product.imageUrl} alt={product.name} style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: 'var(--radius-sm)' }} />
                                                 <div style={{ width: '100%' }}>
                                                     <div style={{ fontWeight: 500 }}>{product.name}</div>
-                                                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-primary)', textTransform: 'uppercase', marginTop: '2px' }}>{product.category || 'Uncategorized'}</div>
+                                                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-primary)', textTransform: 'uppercase', marginTop: '2px' }}>{product.category || 'No Category'}</div>
                                                     <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.description}</div>
                                                 </div>
                                             </div>

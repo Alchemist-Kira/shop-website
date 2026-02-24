@@ -394,7 +394,59 @@ export default function AdminSettings() {
                         </div>
                     )}
                 </div>
+            </div>
 
+            {/* Data Management Section */}
+            <div style={{ marginTop: 'var(--space-xl)', padding: 'var(--space-lg)', backgroundColor: '#fff', borderRadius: 'var(--radius-md)', border: '1px solid #ffccbc', boxShadow: 'var(--shadow-sm)' }}>
+                <h2 style={{ fontSize: '1.25rem', marginBottom: 'var(--space-md)', color: '#d84315', borderBottom: '1px solid #ffccbc', paddingBottom: '0.5rem' }}>Data Management</h2>
+                <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '1.5rem' }}>
+                    Download a full backup of your store's database and all product images in a single ZIP file.
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <button
+                        onClick={async () => {
+                            try {
+                                const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+                                const res = await fetch('/api/admin/download-backup', {
+                                    headers: { 'Authorization': `Bearer ${token}` }
+                                });
+
+                                if (!res.ok) {
+                                    const error = await res.json();
+                                    throw new Error(error.error || 'Failed to download backup');
+                                }
+
+                                const blob = await res.blob();
+                                const url = window.URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `shop_backup_${new Date().toISOString().split('T')[0]}.zip`;
+                                document.body.appendChild(a);
+                                a.click();
+                                window.URL.revokeObjectURL(url);
+                                addToast('Backup download started successfully', 'success');
+                            } catch (err) {
+                                console.error(err);
+                                addToast(err.message, 'error');
+                            }
+                        }}
+                        className="btn"
+                        style={{
+                            backgroundColor: '#d84315',
+                            color: 'white',
+                            borderRadius: 'var(--radius-sm)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                        }}
+                    >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Download Full Backup (.zip)
+                    </button>
+                    <span style={{ fontSize: '0.75rem', color: '#d84315', fontWeight: 500 }}>
+                        Includes database & product images
+                    </span>
+                </div>
             </div>
         </div>
     );
